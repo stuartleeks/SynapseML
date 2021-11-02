@@ -137,3 +137,24 @@ case class TAWarning(// Error code.
                     message: String,
                     // A JSON pointer reference indicating the target object.
                     targetRef: Option[String] = None)
+
+
+// Text Analytics /analyze schemas
+
+case class TAAnalyzeAnalysisInputs(documents : Seq[TADocument])
+
+object TAAnalyzeAnalysisInputs extends SparkBindings[TAAnalyzeAnalysisInputs]
+
+case class TAAnalyzeRequest(displayName:String,
+                              analysisInputs: TAAnalyzeAnalysisInputs
+                              // TODO - add tasks (https://westus2.dev.cognitive.microsoft.com/docs/services/TextAnalytics-v3-1/operations/Analyze)
+                              )
+
+
+case class TAAnalyzeResponseTasks()
+
+case class TAAnalyzeResponse(status: String,
+                             errors: Option[Seq[TAError]],
+                             displayName: String,
+                             tasks: TAAnalyzeResponseTasks
+)

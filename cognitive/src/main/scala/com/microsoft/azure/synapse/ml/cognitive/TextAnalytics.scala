@@ -366,3 +366,6 @@ class EntityDetector(override val uid: String)
 
   def urlPath: String = "/text/analytics/v3.1/entities/linking"
 }
+
+
+object 
