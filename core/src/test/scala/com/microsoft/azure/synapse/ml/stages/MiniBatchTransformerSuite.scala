@@ -38,7 +38,8 @@ trait MiniBatchTestUtils extends TestBase with DataFrameEquality {
       .add("in1", ArrayType(IntegerType))
       .add("in2", ArrayType(StringType)))
 
-    val lengths = df3.collect().map(row => row.getSeq(0).length)
+    val foo = df3.collect()
+    val lengths = foo.map(row => row.getSeq(0).length)
     assert(lengths.sum == n)
     assert(lengths.max > 2)
 

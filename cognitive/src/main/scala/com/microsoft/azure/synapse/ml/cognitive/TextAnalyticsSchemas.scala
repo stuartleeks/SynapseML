@@ -146,15 +146,31 @@ case class TAAnalyzeAnalysisInputs(documents : Seq[TADocument])
 object TAAnalyzeAnalysisInputs extends SparkBindings[TAAnalyzeAnalysisInputs]
 
 case class TAAnalyzeRequest(displayName:String,
-                              analysisInputs: TAAnalyzeAnalysisInputs
-                              // TODO - add tasks (https://westus2.dev.cognitive.microsoft.com/docs/services/TextAnalytics-v3-1/operations/Analyze)
-                              )
+                            analysisInputs: TAAnalyzeAnalysisInputs
+                            // TODO - add tasks (https://westus2.dev.cognitive.microsoft.com/docs/services/TextAnalytics-v3-1/operations/Analyze)
+                           )
+
+case class TAAnalyzeResponseTask[T](state: String,
+                                    results: Seq[T],
+                                    errors: Option[Seq[TAError]],
+                                    modelVersion: Option[String])
 
 
-case class TAAnalyzeResponseTasks()
+case class TAAnalyzeResponseTasks(completed: Int,
+                                  failed: Int,
+                                  inProgress: Int,
+                                  total: Int,
+                                  entityRecognitionTasks: TAAnalyzeResponseTask[NERDocV3]
+                                  // TODO - add other task types
+                                 )
 
+// API call response
 case class TAAnalyzeResponse(status: String,
                              errors: Option[Seq[TAError]],
                              displayName: String,
-                             tasks: TAAnalyzeResponseTasks
-)
+                             tasks: TAAnalyzeResponseTasks)
+
+// Transformer output schema per input row
+case class TAAnalyzeResult(entities: Option[NERDocV3])  // TODO - add other task types
+
+object TAAnalyzeResult extends SparkBindings[TAResponse[TAAnalyzeResult]]

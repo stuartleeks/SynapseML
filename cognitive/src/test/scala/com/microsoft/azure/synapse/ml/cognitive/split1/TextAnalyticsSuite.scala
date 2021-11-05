@@ -447,3 +447,43 @@ class PIISuiteV3 extends TransformerFuzzing[PII] with TextEndpoint {
 
   override def reader: MLReadable[_] = PII
 }
+
+
+class TextAnalyzeSuiteC3 extends TransformerFuzzing[TextAnalyze] with TextEndpoint {
+  import spark.implicits._
+
+  lazy val df: DataFrame = Seq(
+    ("1", "en", "I had a wonderful trip to Seattle last week."),
+    ("2", "en", "I visited Space Needle 2 times.")
+  ).toDF("id", "language", "text")
+
+  lazy val n: TextAnalyze = new TextAnalyze()
+    .setSubscriptionKey(textKey)
+    .setLocation(textApiLocation)
+    .setLanguage("en")
+    .setOutputCol("response")
+
+  test("Basic Usage") {
+    val results = n.transform(df)
+    val matches = results.withColumn("match",
+      col("response")
+        .getItem(0)
+        .getItem("entities")
+        .getItem(0))
+      .select("match")
+
+    val testRow = matches.collect().head(0).asInstanceOf[GenericRowWithSchema]
+
+    assert(testRow.getAs[String]("text") === "trip")
+    assert(testRow.getAs[Int]("offset") === 18)
+    assert(testRow.getAs[Int]("length") === 4)
+    assert(testRow.getAs[Double]("confidenceScore") > 0.7)
+    assert(testRow.getAs[String]("category") === "Event")
+
+  }
+
+  override def testObjects(): Seq[TestObject[TextAnalyze]] =
+    Seq(new TestObject[TextAnalyze](n, df))
+
+  override def reader: MLReadable[_] = TextAnalyze
+}

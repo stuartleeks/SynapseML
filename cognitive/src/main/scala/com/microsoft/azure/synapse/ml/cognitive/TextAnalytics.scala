@@ -365,7 +365,41 @@ class EntityDetector(override val uid: String)
   override def responseDataType: StructType = DetectEntitiesResponseV3.schema
 
   def urlPath: String = "/text/analytics/v3.1/entities/linking"
+} 
+
+
+object TextAnalyze extends ComplexParamsReadable[TextAnalyze]
+class TextAnalyze(override val uid: String) extends CognitiveServicesBase(uid)
+  with HasCognitiveServiceInput with HasInternalJsonOutputParser with HasSetLocation
+  with HasSetLinkedService {
+
+val text = new ServiceParam[Seq[String]](this, "text", "the text in the request body", isRequired = true)
+
+  def this() = this(Identifiable.randomUID("TextAnalyze"))
+
+  def setTextCol(v: String): this.type = setVectorParam(text, v)
+
+  def setText(v: Seq[String]): this.type = setScalarParam(text, v)
+
+  def setText(v: String): this.type = setScalarParam(text, Seq(v))
+
+  setDefault(text -> Right("text"))
+
+  val language = new ServiceParam[Seq[String]](this, "language",
+    "the language code of the text (optional for some services)")
+
+  def setLanguageCol(v: String): this.type = setVectorParam(language, v)
+
+  def setLanguage(v: Seq[String]): this.type = setScalarParam(language, v)
+
+  def setLanguage(v: String): this.type = setScalarParam(language, Seq(v))
+
+  setDefault(language -> Left(Seq("en")))
+
+  override protected def responseDataType: StructType = TAAnalyzeResult.schema
+
+  def urlPath: String = "/text/analytics/v3.1/analyze"
+
+  override protected def prepareEntity: Row => Option[AbstractHttpEntity] = { _ => None }
+
 }
-
-
-object 
