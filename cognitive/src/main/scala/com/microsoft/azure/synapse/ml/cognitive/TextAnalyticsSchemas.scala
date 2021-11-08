@@ -36,6 +36,7 @@ object TAJSONFormat {
 
   implicit val DocumentFormat: RootJsonFormat[TADocument] = jsonFormat3(TADocument.apply)
   implicit val RequestFormat: RootJsonFormat[TARequest] = jsonFormat1(TARequest.apply)
+  implicit val AnalyzeRequestFormat: RootJsonFormat[TAAnalyzeRequest] = jsonFormat3(TAAnalyzeRequest.apply)
 
 }
 
@@ -139,16 +140,26 @@ case class TAWarning(// Error code.
                     targetRef: Option[String] = None)
 
 
-// Text Analytics /analyze schemas
+// Text Analytics /analyze endpoint schemas
 
 case class TAAnalyzeAnalysisInputs(documents : Seq[TADocument])
 
 object TAAnalyzeAnalysisInputs extends SparkBindings[TAAnalyzeAnalysisInputs]
 
-case class TAAnalyzeRequest(displayName:String,
-                            analysisInputs: TAAnalyzeAnalysisInputs
-                            // TODO - add tasks (https://westus2.dev.cognitive.microsoft.com/docs/services/TextAnalytics-v3-1/operations/Analyze)
+case class TAAnalyzeTask(parameters: Map[String, String])
+
+object TAAnalyzeTask extends SparkBindings[TAAnalyzeTask]
+
+case class TAAnalyzeTasks(entityRecognitionTasks: Option[TAAnalyzeTask])
+
+object TAAnalyzeTasks extends SparkBindings[TAAnalyzeTasks]
+
+case class TAAnalyzeRequest(displayName: String,
+                            analysisInputs: TAAnalyzeAnalysisInputs,
+                            tasks: TAAnalyzeTasks
                            )
+
+object TAAnalyzeRequest extends SparkBindings[TAAnalyzeRequest]
 
 case class TAAnalyzeResponseTask[T](state: String,
                                     results: Seq[T],
@@ -174,3 +185,7 @@ case class TAAnalyzeResponse(status: String,
 case class TAAnalyzeResult(entities: Option[NERDocV3])  // TODO - add other task types
 
 object TAAnalyzeResult extends SparkBindings[TAResponse[TAAnalyzeResult]]
+
+
+
+

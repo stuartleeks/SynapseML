@@ -402,4 +402,40 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
 
   override protected def prepareEntity: Row => Option[AbstractHttpEntity] = { _ => None }
 
+  // TODO - inputFunc
+  // TODO - getInternalTransformer
+
+  override protected def inputFunc(schema: StructType): Row => Option[HttpRequestBase] = {
+    { row: Row =>
+      if (shouldSkip(row)) {
+        None
+      } else if (getValue(row, text).forall(Option(_).isEmpty)) {
+        None
+      } else {
+        import TAJSONFormat._
+        val post = new HttpPost(getUrl)
+        getValueOpt(row, subscriptionKey).foreach(post.setHeader("Ocp-Apim-Subscription-Key", _))
+        post.setHeader("Content-Type", "application/json")
+        val texts = getValue(row, text)
+
+        val languages: Option[Seq[String]] = (getValueOpt(row, language) match {
+          case Some(Seq(lang)) => Some(Seq.fill(texts.size)(lang))
+          case s => s
+        })
+
+        val documents = texts.zipWithIndex.map { case (t, i) =>
+          TADocument(languages.flatMap(ls => Option(ls(i))), i.toString, Option(t).getOrElse(""))
+        }
+        val displayName = "TODO" // TODO - add setDisplayName or setOptions
+        val analysisInputs = TAAnalyzeAnalysisInputs(documents)
+        val parametersNER = Map("model-version" -> "latest")
+        val taskNER = TAAnalyzeTask(parametersNER)
+        val tasks = TAAnalyzeTasks(Some(taskNER))
+        val json = TAAnalyzeRequest(displayName, analysisInputs, tasks).toJson.compactPrint
+        post.setEntity(new StringEntity(json, "UTF-8"))
+        Some(post)
+      }
+    }
+  }
+
 }

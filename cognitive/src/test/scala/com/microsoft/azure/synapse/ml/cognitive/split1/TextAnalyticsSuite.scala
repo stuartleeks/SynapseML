@@ -465,6 +465,7 @@ class TextAnalyzeSuiteC3 extends TransformerFuzzing[TextAnalyze] with TextEndpoi
 
   test("Basic Usage") {
     val results = n.transform(df)
+    val foo = results.collect();
     val matches = results.withColumn("match",
       col("response")
         .getItem(0)
