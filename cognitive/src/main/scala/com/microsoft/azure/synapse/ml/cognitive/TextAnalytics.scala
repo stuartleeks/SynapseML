@@ -369,9 +369,9 @@ class EntityDetector(override val uid: String)
 
 
 object TextAnalyze extends ComplexParamsReadable[TextAnalyze]
-class TextAnalyze(override val uid: String) extends CognitiveServicesBase(uid)
+class TextAnalyze(override val uid: String) extends CognitiveServicesBaseNoHandler(uid)
   with HasCognitiveServiceInput with HasInternalJsonOutputParser with HasSetLocation
-  with HasSetLinkedService {
+  with HasSetLinkedService with BasicAsyncReply {
 
 val text = new ServiceParam[Seq[String]](this, "text", "the text in the request body", isRequired = true)
 

@@ -255,7 +255,6 @@ trait BasicAsyncReply extends HasAsyncReply {
   }
 }
 
-
 trait HasAsyncReply extends Params {
   val backoffs: IntArrayParam = new IntArrayParam(
     this, "backoffs", "array of backoffs to use in the handler")

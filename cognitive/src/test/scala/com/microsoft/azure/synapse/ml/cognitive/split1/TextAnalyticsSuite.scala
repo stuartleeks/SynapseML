@@ -451,12 +451,12 @@ class PIISuiteV3 extends TransformerFuzzing[PII] with TextEndpoint {
 
 class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint {
   // TODO add Async Reply trait
-  
+
   import spark.implicits._
 
   lazy val df: DataFrame = Seq(
-    ("1", "en", "I had a wonderful trip to Seattle last week."),
-    ("2", "en", "I visited Space Needle 2 times.")
+    ("1", Seq("en"), Seq("I had a wonderful trip to Seattle last week.")),
+    ("2", Seq("en"), Seq("I visited Space Needle 2 times."))
   ).toDF("id", "language", "text")
 
   lazy val n: TextAnalyze = new TextAnalyze()
@@ -466,8 +466,11 @@ class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint
     .setOutputCol("response")
 
   test("Basic Usage") {
-    val results = n.transform(df)
+    val results = n.transform(df).cache()
+    results.show()
     val foo = results.collect();
+    results.printSchema()
+    
     // val matches = results.withColumn("match",
     //   col("response")
     //     .getItem(0)
