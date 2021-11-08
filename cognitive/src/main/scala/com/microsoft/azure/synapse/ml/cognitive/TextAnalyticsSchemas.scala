@@ -36,8 +36,10 @@ object TAJSONFormat {
 
   implicit val DocumentFormat: RootJsonFormat[TADocument] = jsonFormat3(TADocument.apply)
   implicit val RequestFormat: RootJsonFormat[TARequest] = jsonFormat1(TARequest.apply)
+  implicit val AnalysisInputsFormat: RootJsonFormat[TAAnalyzeAnalysisInputs] = jsonFormat1(TAAnalyzeAnalysisInputs.apply)
+  implicit val AnalysisTasksFormat: RootJsonFormat[TAAnalyzeTasks] = jsonFormat1(TAAnalyzeTasks.apply)
+  implicit val AnalysisTaskFormat: RootJsonFormat[TAAnalyzeTask] = jsonFormat1(TAAnalyzeTask.apply)
   implicit val AnalyzeRequestFormat: RootJsonFormat[TAAnalyzeRequest] = jsonFormat3(TAAnalyzeRequest.apply)
-
 }
 
 // SentimentV3 Schemas
