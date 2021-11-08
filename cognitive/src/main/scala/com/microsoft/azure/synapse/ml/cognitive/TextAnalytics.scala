@@ -427,11 +427,11 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
           TADocument(languages.flatMap(ls => Option(ls(i))), i.toString, Option(t).getOrElse(""))
         }
         val displayName = "TODO" // TODO - add setDisplayName or setOptions
-        val analysisInputs = TAAnalyzeAnalysisInputs(documents)
+        val analysisInput = TAAnalyzeAnalysisInput(documents)
         val parametersNER = Map("model-version" -> "latest")
         val taskNER = TAAnalyzeTask(parametersNER)
-        val tasks = TAAnalyzeTasks(Some(taskNER))
-        val json = TAAnalyzeRequest(displayName, analysisInputs, tasks).toJson.compactPrint
+        val tasks = TAAnalyzeTasks(Seq(taskNER)) // TODO - get tasks from options etc
+        val json = TAAnalyzeRequest(displayName, analysisInput, tasks).toJson.compactPrint
         post.setEntity(new StringEntity(json, "UTF-8"))
         Some(post)
       }

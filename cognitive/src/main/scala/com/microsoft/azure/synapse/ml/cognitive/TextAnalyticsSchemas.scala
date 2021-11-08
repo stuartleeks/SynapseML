@@ -36,7 +36,7 @@ object TAJSONFormat {
 
   implicit val DocumentFormat: RootJsonFormat[TADocument] = jsonFormat3(TADocument.apply)
   implicit val RequestFormat: RootJsonFormat[TARequest] = jsonFormat1(TARequest.apply)
-  implicit val AnalysisInputsFormat: RootJsonFormat[TAAnalyzeAnalysisInputs] = jsonFormat1(TAAnalyzeAnalysisInputs.apply)
+  implicit val AnalysisInputsFormat: RootJsonFormat[TAAnalyzeAnalysisInput] = jsonFormat1(TAAnalyzeAnalysisInput.apply)
   implicit val AnalysisTaskFormat: RootJsonFormat[TAAnalyzeTask] = jsonFormat1(TAAnalyzeTask.apply)
   implicit val AnalysisTasksFormat: RootJsonFormat[TAAnalyzeTasks] = jsonFormat1(TAAnalyzeTasks.apply)
   implicit val AnalyzeRequestFormat: RootJsonFormat[TAAnalyzeRequest] = jsonFormat3(TAAnalyzeRequest.apply)
@@ -144,20 +144,20 @@ case class TAWarning(// Error code.
 
 // Text Analytics /analyze endpoint schemas
 
-case class TAAnalyzeAnalysisInputs(documents : Seq[TADocument])
+case class TAAnalyzeAnalysisInput(documents : Seq[TADocument])
 
-object TAAnalyzeAnalysisInputs extends SparkBindings[TAAnalyzeAnalysisInputs]
+object TAAnalyzeAnalysisInput extends SparkBindings[TAAnalyzeAnalysisInput]
 
 case class TAAnalyzeTask(parameters: Map[String, String])
 
 object TAAnalyzeTask extends SparkBindings[TAAnalyzeTask]
 
-case class TAAnalyzeTasks(entityRecognitionTasks: Option[TAAnalyzeTask])
+case class TAAnalyzeTasks(entityRecognitionTasks: Seq[TAAnalyzeTask])
 
 object TAAnalyzeTasks extends SparkBindings[TAAnalyzeTasks]
 
 case class TAAnalyzeRequest(displayName: String,
-                            analysisInputs: TAAnalyzeAnalysisInputs,
+                            analysisInput: TAAnalyzeAnalysisInput,
                             tasks: TAAnalyzeTasks
                            )
 
