@@ -38,7 +38,7 @@ object TAJSONFormat {
   implicit val RequestFormat: RootJsonFormat[TARequest] = jsonFormat1(TARequest.apply)
   implicit val AnalysisInputsFormat: RootJsonFormat[TAAnalyzeAnalysisInput] = jsonFormat1(TAAnalyzeAnalysisInput.apply)
   implicit val AnalysisTaskFormat: RootJsonFormat[TAAnalyzeTask] = jsonFormat1(TAAnalyzeTask.apply)
-  implicit val AnalysisTasksFormat: RootJsonFormat[TAAnalyzeTasks] = jsonFormat1(TAAnalyzeTasks.apply)
+  implicit val AnalysisTasksFormat: RootJsonFormat[TAAnalyzeTasks] = jsonFormat5(TAAnalyzeTasks.apply)
   implicit val AnalyzeRequestFormat: RootJsonFormat[TAAnalyzeRequest] = jsonFormat3(TAAnalyzeRequest.apply)
   // implicit val AnalyzeResponseFormat: RootJsonFormat[TAAnalyzeResponse] = jsonFormat4(TAAnalyzeResponse.apply)
 }
@@ -153,7 +153,11 @@ case class TAAnalyzeTask(parameters: Map[String, String])
 
 object TAAnalyzeTask extends SparkBindings[TAAnalyzeTask]
 
-case class TAAnalyzeTasks(entityRecognitionTasks: Seq[TAAnalyzeTask])
+case class TAAnalyzeTasks(entityRecognitionTasks: Seq[TAAnalyzeTask],
+                          entityLinkingTasks: Seq[TAAnalyzeTask],
+                          entityRecognitionPiiTasks: Seq[TAAnalyzeTask],
+                          keyPhraseExtractionTasks: Seq[TAAnalyzeTask],
+                          sentimentAnalysisTasks: Seq[TAAnalyzeTask])
 
 object TAAnalyzeTasks extends SparkBindings[TAAnalyzeTasks]
 
@@ -175,7 +179,11 @@ case class TAAnalyzeResponseTasks(completed: Int,
                                   failed: Int,
                                   inProgress: Int,
                                   total: Int,
-                                  entityRecognitionTasks: Option[Seq[TAAnalyzeResponseTask[NERDocV3]]]
+                                  entityRecognitionTasks: Option[Seq[TAAnalyzeResponseTask[NERDocV3]]],
+                                  entityLinkingTasks: Option[Seq[TAAnalyzeResponseTask[EntityV3]]],
+                                  entityRecognitionPiiTasks: Option[Seq[TAAnalyzeResponseTask[PIIDocV3]]],
+                                  keyPhraseExtractionTasks:  Option[Seq[TAAnalyzeResponseTask[KeyPhraseScoreV3]]],
+                                  sentimentAnalysisTasks:  Option[Seq[TAAnalyzeResponseTask[SentimentScoredDocumentV3]]]
                                   // TODO - add other task types
                                  )
 

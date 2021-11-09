@@ -12,6 +12,7 @@ import org.apache.spark.ml.util.MLReadable
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.{DataFrame, Row}
+import scala.collection.mutable.WrappedArray
 
 trait TextEndpoint {
   lazy val textKey = sys.env.getOrElse("TEXT_API_KEY", Secrets.CognitiveApiKey)
@@ -479,7 +480,7 @@ class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint
     println(responseRows(0).get(0).asInstanceOf[GenericRowWithSchema].get(3).asInstanceOf[GenericRowWithSchema])
 
 
-    val entityRows = results.withColumn("entity", 
+    val entityRows = results.withColumn("entity",
       col("response")
         .getItem("tasks")
         .getItem("entityRecognitionTasks")
@@ -492,7 +493,7 @@ class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint
       ).select("entity")
 
     var entityRow = entityRows.collect().head(0).asInstanceOf[GenericRowWithSchema]
-
+    println("entities")
     println(entityRow)
 
     assert(entityRow.getAs[String]("text") === "trip")
@@ -500,26 +501,21 @@ class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint
     assert(entityRow.getAs[Int]("length") === 4)
     assert(entityRow.getAs[Double]("confidenceScore") > 0.7)
     assert(entityRow.getAs[String]("category") === "Event")
+  
+    val keyPhraseRows = results.withColumn("keyPhrase",
+      col("response")
+        .getItem("tasks")
+        .getItem("keyPhraseExtractionTasks")
+        .getItem(0)
+        .getItem("results")
+        .getItem("documents")
+        .getItem(0)
+        .getItem("keyPhrases")
+      ).select("keyPhrase")
 
-    // responseRows(0).get(0).asInstanceOf[GenericRowWithSchema].get(3)
-    // responseRows(0).get(0).asInstanceOf[GenericRowWithSchema].get(3).asInstanceOf[GenericRowWithSchema].get(0)
-    
-    println("wip!")
-    // val matches = results.withColumn("match",
-    //   col("response")
-    //     .getItem(0)
-    //     .getItem("entities")
-    //     .getItem(0))
-    //   .select("match")
-
-    // val testRow = matches.collect().head(0).asInstanceOf[GenericRowWithSchema]
-
-    // assert(testRow.getAs[String]("text") === "trip")
-    // assert(testRow.getAs[Int]("offset") === 18)
-    // assert(testRow.getAs[Int]("length") === 4)
-    // assert(testRow.getAs[Double]("confidenceScore") > 0.7)
-    // assert(testRow.getAs[String]("category") === "Event")
-
+    var keyPhraseRow = keyPhraseRows.collect().head(0).asInstanceOf[WrappedArray[String]]
+    println("keyPhrases")
+    println(keyPhraseRow)
   }
 
   override def testObjects(): Seq[TestObject[TextAnalyze]] =

@@ -427,9 +427,13 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
         }
         val displayName = "TODO-displayname" // TODO - add setDisplayName or setOptions
         val analysisInput = TAAnalyzeAnalysisInput(documents)
-        val parametersNER = Map("model-version" -> "latest")
-        val taskNER = TAAnalyzeTask(parametersNER)
-        val tasks = TAAnalyzeTasks(Seq(taskNER)) // TODO - get tasks from options etc
+        val tasks = TAAnalyzeTasks(
+            entityRecognitionTasks=Seq(TAAnalyzeTask(Map("model-version" -> "latest"))),
+            entityLinkingTasks=Seq(TAAnalyzeTask(Map("model-version" -> "latest"))),
+            entityRecognitionPiiTasks=Seq(TAAnalyzeTask(Map("model-version" -> "latest"))),
+            keyPhraseExtractionTasks=Seq(TAAnalyzeTask(Map("model-version" -> "latest"))),
+            sentimentAnalysisTasks=Seq(TAAnalyzeTask(Map("model-version" -> "latest")))
+          ) // TODO - get tasks from options etc
         val json = TAAnalyzeRequest(displayName, analysisInput, tasks).toJson.compactPrint
         post.setEntity(new StringEntity(json, "UTF-8"))
         Some(post)
