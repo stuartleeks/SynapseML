@@ -242,26 +242,6 @@ trait BasicAsyncReply extends HasAsyncReply {
           }
           None
         })
-        if (resp.isDefined){
-          val resp2 = resp.get
-          if (resp2.entity.isDefined){
-            try {
-              val entity = resp2.entity.get
-              val content = entity.content
-              var s = "";
-              for (x <- content){
-                val y = x.toChar
-                s += y
-              }
-              println(s)
-            }
-            catch{
-              case e:Exception =>
-                println("oops!")
-                println(e.toString())
-            }
-          }
-        }
         resp
       }
       if (it.hasNext) {
