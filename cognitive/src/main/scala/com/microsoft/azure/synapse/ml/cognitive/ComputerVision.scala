@@ -236,12 +236,33 @@ trait BasicAsyncReply extends HasAsyncReply {
       val maxTries = getMaxPollingRetries
       val key = request.headers.find(_.name == "Ocp-Apim-Subscription-Key").map(_.value)
       val it = (0 to maxTries).toIterator.flatMap { _ =>
-        queryForResult(key, client, location).orElse({
+        val resp = queryForResult(key, client, location).orElse({
           blocking {
             Thread.sleep(getPollingDelay.toLong)
           }
           None
         })
+        if (resp.isDefined){
+          val resp2 = resp.get
+          if (resp2.entity.isDefined){
+            try {
+              val entity = resp2.entity.get
+              val content = entity.content
+              var s = "";
+              for (x <- content){
+                val y = x.toChar
+                s += y
+              }
+              println(s)
+            }
+            catch{
+              case e:Exception =>
+                println("oops!")
+                println(e.toString())
+            }
+          }
+        }
+        resp
       }
       if (it.hasNext) {
         it.next()

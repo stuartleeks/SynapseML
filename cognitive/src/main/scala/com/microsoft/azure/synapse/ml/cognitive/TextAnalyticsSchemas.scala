@@ -40,6 +40,7 @@ object TAJSONFormat {
   implicit val AnalysisTaskFormat: RootJsonFormat[TAAnalyzeTask] = jsonFormat1(TAAnalyzeTask.apply)
   implicit val AnalysisTasksFormat: RootJsonFormat[TAAnalyzeTasks] = jsonFormat1(TAAnalyzeTasks.apply)
   implicit val AnalyzeRequestFormat: RootJsonFormat[TAAnalyzeRequest] = jsonFormat3(TAAnalyzeRequest.apply)
+  // implicit val AnalyzeResponseFormat: RootJsonFormat[TAAnalyzeResponse] = jsonFormat4(TAAnalyzeResponse.apply)
 }
 
 // SentimentV3 Schemas
@@ -163,17 +164,18 @@ case class TAAnalyzeRequest(displayName: String,
 
 object TAAnalyzeRequest extends SparkBindings[TAAnalyzeRequest]
 
-case class TAAnalyzeResponseTask[T](state: String,
-                                    results: Seq[T],
-                                    errors: Option[Seq[TAError]],
-                                    modelVersion: Option[String])
 
+case class TAAnalyzeResponseTaskResults[T](documents: Seq[T],
+                                        errors: Seq[TAError],
+                                        modelVersion: String)
+case class TAAnalyzeResponseTask[T](state: String,
+                                 results: TAAnalyzeResponseTaskResults[T])
 
 case class TAAnalyzeResponseTasks(completed: Int,
                                   failed: Int,
                                   inProgress: Int,
                                   total: Int,
-                                  entityRecognitionTasks: TAAnalyzeResponseTask[NERDocV3]
+                                  entityRecognitionTasks: Option[Seq[TAAnalyzeResponseTask[NERDocV3]]]
                                   // TODO - add other task types
                                  )
 
@@ -183,10 +185,12 @@ case class TAAnalyzeResponse(status: String,
                              displayName: String,
                              tasks: TAAnalyzeResponseTasks)
 
-// Transformer output schema per input row
-case class TAAnalyzeResult(entities: Option[NERDocV3])  // TODO - add other task types
+object TAAnalyzeResponse extends SparkBindings[TAAnalyzeResponse]
 
-object TAAnalyzeResult extends SparkBindings[TAResponse[TAAnalyzeResult]]
+// // Transformer output schema per input row
+// case class TAAnalyzeResult(entities: Option[NERDocV3])  // TODO - add other task types
+
+// object TAAnalyzeResult extends SparkBindings[TAResponse[TAAnalyzeResult]]
 
 
 

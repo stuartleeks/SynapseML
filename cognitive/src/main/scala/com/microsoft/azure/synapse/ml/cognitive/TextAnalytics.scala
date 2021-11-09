@@ -396,13 +396,12 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
 
   setDefault(language -> Left(Seq("en")))
 
-  override protected def responseDataType: StructType = TAAnalyzeResult.schema
+  override protected def responseDataType: StructType = TAAnalyzeResponse.schema
 
   def urlPath: String = "/text/analytics/v3.1/analyze"
 
   override protected def prepareEntity: Row => Option[AbstractHttpEntity] = { _ => None }
 
-  // TODO - inputFunc
   // TODO - getInternalTransformer
 
   override protected def inputFunc(schema: StructType): Row => Option[HttpRequestBase] = {
@@ -426,7 +425,7 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
         val documents = texts.zipWithIndex.map { case (t, i) =>
           TADocument(languages.flatMap(ls => Option(ls(i))), i.toString, Option(t).getOrElse(""))
         }
-        val displayName = "TODO" // TODO - add setDisplayName or setOptions
+        val displayName = "TODO-displayname" // TODO - add setDisplayName or setOptions
         val analysisInput = TAAnalyzeAnalysisInput(documents)
         val parametersNER = Map("model-version" -> "latest")
         val taskNER = TAAnalyzeTask(parametersNER)
@@ -437,5 +436,91 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
       }
     }
   }
+  override protected def getInternalTransformer(schema: StructType): PipelineModel = {
+    val dynamicParamColName = DatasetExtensions.findUnusedColumnName("dynamic", schema)
+    val badColumns = getVectorParamMap.values.toSet.diff(schema.fieldNames.toSet)
+    assert(badColumns.isEmpty,
+      s"Could not find dynamic columns: $badColumns in columns: ${schema.fieldNames.toSet}")
 
+    val missingRequiredParams = this.getRequiredParams.filter {
+      p => this.get(p).isEmpty && this.getDefault(p).isEmpty
+    }
+    assert(missingRequiredParams.isEmpty,
+      s"Missing required params: ${missingRequiredParams.map(s => s.name).mkString("(", ", ", ")")}")
+
+    val dynamicParamCols = getVectorParamMap.values.toList.map(col) match {
+      case Nil => Seq(lit(false).alias("placeholder"))
+      case l => l
+    }
+
+    // TODO refactor to remove duplicate from TextAnalyticsBase
+    def reshapeToArray(parameterName: String): Option[(Transformer, String, String)] = {
+      val reshapedColName = DatasetExtensions.findUnusedColumnName(parameterName, schema)
+      getVectorParamMap.get(parameterName).flatMap {
+        case c if schema(c).dataType == StringType =>
+          Some((Lambda(_.withColumn(reshapedColName, array(col(getVectorParam(parameterName))))),
+            getVectorParam(parameterName),
+            reshapedColName))
+        case _ => None
+      }
+    }
+
+    val reshapeCols = Seq(reshapeToArray("text"), reshapeToArray("language")).flatten
+
+    val newColumnMapping = reshapeCols.map {
+      case (_, oldCol, newCol) => (oldCol, newCol)
+    }.toMap
+
+    val columnsToGroup = getVectorParamMap.map { case (_, oldCol) =>
+      val newCol = newColumnMapping.getOrElse(oldCol, oldCol)
+      col(newCol).alias(oldCol)
+    }.toSeq
+
+    val innerResponseDataType = TAAnalyzeResponse.schema
+    val innerFields = innerResponseDataType.fields.filter(_.name != "id")
+
+    val unpackBatchUDF = UDFUtils.oldUdf({ rowOpt: Row =>
+      Option(rowOpt).map { row =>
+        val documents = row.getSeq[Row](1).map(doc =>
+          (doc.getString(0).toInt, doc)).toMap
+        val errors = row.getSeq[Row](2).map(err => (err.getString(0).toInt, err)).toMap
+        val rows: Seq[Row] = (0 until (documents.size + errors.size)).map(i =>
+          documents.get(i)
+            .map(doc => Row.fromSeq(doc.toSeq.tail ++ Seq(None)))
+            .getOrElse(Row.fromSeq(
+              Seq.fill(innerFields.length)(None) ++ Seq(errors.get(i).map(_.getString(1)).orNull)))
+        )
+        rows
+      }
+    }, ArrayType(
+      innerResponseDataType.fields.filter(_.name != "id").foldLeft(new StructType()) { case (st, f) =>
+        st.add(f.name, f.dataType)
+      }.add("error-message", StringType)
+    )
+    )
+
+    val stages = reshapeCols.map(_._1).toArray ++ Array(
+      Lambda(_.withColumn(
+        dynamicParamColName,
+        struct(columnsToGroup: _*))),
+      new SimpleHTTPTransformer()
+        .setInputCol(dynamicParamColName)
+        .setOutputCol(getOutputCol)
+        .setInputParser(getInternalInputParser(schema))
+        .setOutputParser(getInternalOutputParser(schema))
+        .setHandler(handlingFunc)
+        .setConcurrency(getConcurrency)
+        .setConcurrentTimeout(get(concurrentTimeout))
+        .setErrorCol(getErrorCol),
+      // new UDFTransformer()
+      //   .setInputCol(getOutputCol)
+      //   .setOutputCol(getOutputCol)
+      //   .setUDF(unpackBatchUDF),
+      // new DropColumns().setCols(Array(
+      //   dynamicParamColName) ++ newColumnMapping.values.toArray.asInstanceOf[Array[String]])
+    )
+
+    NamespaceInjections.pipelineModel(stages)
+
+  }
 }

@@ -415,7 +415,10 @@ class PIISuiteV3 extends TransformerFuzzing[PII] with TextEndpoint {
     .setOutputCol("response")
 
   test("Basic Usage") {
-    val results = n.transform(df)
+    // val results = n.transform(df)
+    val results = n.transform(df).cache()
+    results.show()
+
 
     val redactedTexts = results.withColumn("redactedText",
       col("response")
@@ -450,7 +453,6 @@ class PIISuiteV3 extends TransformerFuzzing[PII] with TextEndpoint {
 
 
 class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint {
-  // TODO add Async Reply trait
 
   import spark.implicits._
 
@@ -470,7 +472,39 @@ class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint
     results.show()
     val foo = results.collect();
     results.printSchema()
+
+    val response = results.select("response")
+    val responseRows = response.collect()
+
+    println(responseRows(0).get(0).asInstanceOf[GenericRowWithSchema].get(3).asInstanceOf[GenericRowWithSchema])
+
+
+    val entityRows = results.withColumn("entity", 
+      col("response")
+        .getItem("tasks")
+        .getItem("entityRecognitionTasks")
+        .getItem(0)
+        .getItem("results")
+        .getItem("documents")
+        .getItem(0)
+        .getItem("entities")
+        .getItem(0)
+      ).select("entity")
+
+    var entityRow = entityRows.collect().head(0).asInstanceOf[GenericRowWithSchema]
+
+    println(entityRow)
+
+    assert(entityRow.getAs[String]("text") === "trip")
+    assert(entityRow.getAs[Int]("offset") === 18)
+    assert(entityRow.getAs[Int]("length") === 4)
+    assert(entityRow.getAs[Double]("confidenceScore") > 0.7)
+    assert(entityRow.getAs[String]("category") === "Event")
+
+    // responseRows(0).get(0).asInstanceOf[GenericRowWithSchema].get(3)
+    // responseRows(0).get(0).asInstanceOf[GenericRowWithSchema].get(3).asInstanceOf[GenericRowWithSchema].get(0)
     
+    println("wip!")
     // val matches = results.withColumn("match",
     //   col("response")
     //     .getItem(0)
