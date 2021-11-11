@@ -327,7 +327,8 @@ abstract class CognitiveServicesBaseNoHandler(val uid: String) extends Transform
   override def copy(extra: ParamMap): Transformer = defaultCopy(extra)
 
   override def transformSchema(schema: StructType): StructType = {
-    getInternalTransformer(schema).transformSchema(schema)
+    val newSchema = getInternalTransformer(schema).transformSchema(schema)
+    newSchema
   }
 }
 

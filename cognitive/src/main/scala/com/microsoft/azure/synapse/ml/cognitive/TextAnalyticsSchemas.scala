@@ -195,10 +195,27 @@ case class TAAnalyzeResponse(status: String,
 
 object TAAnalyzeResponse extends SparkBindings[TAAnalyzeResponse]
 
-// // Transformer output schema per input row
-// case class TAAnalyzeResult(entities: Option[NERDocV3])  // TODO - add other task types
 
-// object TAAnalyzeResult extends SparkBindings[TAResponse[TAAnalyzeResult]]
+// TODO - error col for errors property
+//      - drop completed, failed, inProgress, total fields
+//      - setOutputCol -> setOutputColPrefix, then have <prefix>_keyPhraseExtraction etc (as, e.g. array of TAAnalyzeResponseTaskResults[KeyPhraseScoreV3] )
+
+// TODO - check that we're handling language/languageCol!
+
+// Transformer output schema per input row
+// TODO - add other task types
+// TODO - extend to handle multiple instances of each task type
+case class TAAnalyzeResult(entityRecognition: Option[Seq[TAAnalyzeResponseTaskResults[NERDocV3]]],
+                           entityLinking: Option[Seq[TAAnalyzeResponseTaskResults[EntityV3]]],
+                           entityRecognitionPii: Option[Seq[TAAnalyzeResponseTaskResults[PIIDocV3]]],
+                           keyPhraseExtraction: Option[Seq[TAAnalyzeResponseTaskResults[KeyPhraseScoreV3]]],
+                           sentimentAnalysis: Option[Seq[TAAnalyzeResponseTaskResults[SentimentScoredDocumentV3]]])
+
+// case class TAAnalyzeResult(test1: Option[Seq[String]],
+//                            test2: Option[Seq[Int]])
+
+object TAAnalyzeResult extends SparkBindings[TAAnalyzeResult]
+
 
 
 

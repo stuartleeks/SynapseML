@@ -20,6 +20,7 @@ import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import java.net.URI
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 
 abstract class TextAnalyticsBase(override val uid: String) extends CognitiveServicesBase(uid)
   with HasCognitiveServiceInput with HasInternalJsonOutputParser with HasSetLocation
@@ -396,7 +397,8 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
 
   setDefault(language -> Left(Seq("en")))
 
-  override protected def responseDataType: StructType = TAAnalyzeResponse.schema
+  override protected def responseDataType: StructType = TAAnalyzeResponse.schema // TODO - this has to match the HTTP response or the data isn't set in the UDF step
+  // override protected def responseDataType: StructType = TAAnalyzeResult.schema
 
   def urlPath: String = "/text/analytics/v3.1/analyze"
 
@@ -441,10 +443,13 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
     }
   }
   override protected def getInternalTransformer(schema: StructType): PipelineModel = {
-    val dynamicParamColName = DatasetExtensions.findUnusedColumnName("dynamic", schema)
+    val dynamicInputParamColName = DatasetExtensions.findUnusedColumnName("dynamicInput", schema)
     val badColumns = getVectorParamMap.values.toSet.diff(schema.fieldNames.toSet)
     assert(badColumns.isEmpty,
-      s"Could not find dynamic columns: $badColumns in columns: ${schema.fieldNames.toSet}")
+    s"Could not find dynamic input columns: $badColumns in columns: ${schema.fieldNames.toSet}")
+    
+    val dynamicOutputParamColName = DatasetExtensions.findUnusedColumnName("dynamicOutput", schema)
+
 
     val missingRequiredParams = this.getRequiredParams.filter {
       p => this.get(p).isEmpty && this.getDefault(p).isEmpty
@@ -469,7 +474,8 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
       }
     }
 
-    val reshapeCols = Seq(reshapeToArray("text"), reshapeToArray("language")).flatten
+    val foo = reshapeToArray("text")
+    val reshapeCols = Seq(foo, reshapeToArray("language")).flatten
 
     val newColumnMapping = reshapeCols.map {
       case (_, oldCol, newCol) => (oldCol, newCol)
@@ -480,35 +486,68 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
       col(newCol).alias(oldCol)
     }.toSeq
 
-    val innerResponseDataType = TAAnalyzeResponse.schema
+    // val innerResponseDataType = TAAnalyzeResponse.schema
+    val innerResponseDataType = TAAnalyzeResult.schema
     val innerFields = innerResponseDataType.fields.filter(_.name != "id")
+
+    // val unpackBatchUDF = UDFUtils.oldUdf({ rowOpt: Row =>
+    //   Option(rowOpt).map { row =>
+    //     val documents = row.getSeq[Row](1).map(doc =>
+    //       (doc.getString(0).toInt, doc)).toMap
+    //     val errors = row.getSeq[Row](2).map(err => (err.getString(0).toInt, err)).toMap
+    //     val rows: Seq[Row] = (0 until (documents.size + errors.size)).map(i =>
+    //       documents.get(i)
+    //         .map(doc => Row.fromSeq(doc.toSeq.tail ++ Seq(None)))
+    //         .getOrElse(Row.fromSeq(
+    //           Seq.fill(innerFields.length)(None) ++ Seq(errors.get(i).map(_.getString(1)).orNull)))
+    //     )
+    //     rows
+    //   }
+    // }, ArrayType(
+    //   innerResponseDataType.fields.filter(_.name != "id").foldLeft(new StructType()) { case (st, f) =>
+    //     st.add(f.name, f.dataType)
+    //   }.add("error-message", StringType)
+    // )
+    // )
 
     val unpackBatchUDF = UDFUtils.oldUdf({ rowOpt: Row =>
       Option(rowOpt).map { row =>
-        val documents = row.getSeq[Row](1).map(doc =>
-          (doc.getString(0).toInt, doc)).toMap
-        val errors = row.getSeq[Row](2).map(err => (err.getString(0).toInt, err)).toMap
-        val rows: Seq[Row] = (0 until (documents.size + errors.size)).map(i =>
-          documents.get(i)
-            .map(doc => Row.fromSeq(doc.toSeq.tail ++ Seq(None)))
-            .getOrElse(Row.fromSeq(
-              Seq.fill(innerFields.length)(None) ++ Seq(errors.get(i).map(_.getString(1)).orNull)))
-        )
-        rows
+        val tasks = row.getAs[GenericRowWithSchema](3)
+        // val documents = row.getSeq[Row](1).map(doc =>
+        //   (doc.getString(0).toInt, doc)).toMap
+        // val errors = row.getSeq[Row](2).map(err => (err.getString(0).toInt, err)).toMap
+        // val rows: Seq[Row] = (0 until (documents.size + errors.size)).map(i =>
+        //   documents.get(i)
+        //     .map(doc => Row.fromSeq(doc.toSeq.tail ++ Seq(None)))
+        //     .getOrElse(Row.fromSeq(
+        //       Seq.fill(innerFields.length)(None) ++ Seq(errors.get(i).map(_.getString(1)).orNull)))
+        // )
+        // rows
+
+
+        // tasks
+        Row.fromSeq(Seq(
+          None,
+          None,
+          None,
+          None,
+          None,
+        ))
       }
-    }, ArrayType(
-      innerResponseDataType.fields.filter(_.name != "id").foldLeft(new StructType()) { case (st, f) =>
-        st.add(f.name, f.dataType)
-      }.add("error-message", StringType)
+    }, innerResponseDataType
     )
-    )
+
 
     val stages = reshapeCols.map(_._1).toArray ++ Array(
       Lambda(_.withColumn(
-        dynamicParamColName,
+        dynamicInputParamColName,
         struct(columnsToGroup: _*))),
+      // Lambda(_.withColumn(
+      //   dynamicOutputParamColName,
+      //   lit("None"))),
       new SimpleHTTPTransformer()
-        .setInputCol(dynamicParamColName)
+        .setInputCol(dynamicInputParamColName)
+        // .setOutputCol(dynamicOutputParamColName)
         .setOutputCol(getOutputCol)
         .setInputParser(getInternalInputParser(schema))
         .setOutputParser(getInternalOutputParser(schema))
@@ -516,12 +555,13 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
         .setConcurrency(getConcurrency)
         .setConcurrentTimeout(get(concurrentTimeout))
         .setErrorCol(getErrorCol),
-      // new UDFTransformer()
-      //   .setInputCol(getOutputCol)
-      //   .setOutputCol(getOutputCol)
-      //   .setUDF(unpackBatchUDF),
-      // new DropColumns().setCols(Array(
-      //   dynamicParamColName) ++ newColumnMapping.values.toArray.asInstanceOf[Array[String]])
+      new UDFTransformer()
+        .setInputCol(getOutputCol)
+        // .setInputCol(dynamicOutputParamColName)
+        .setOutputCol(getOutputCol)
+        .setUDF(unpackBatchUDF),
+      new DropColumns().setCols(Array(
+        dynamicInputParamColName) ++ newColumnMapping.values.toArray.asInstanceOf[Array[String]])
     )
 
     NamespaceInjections.pipelineModel(stages)
