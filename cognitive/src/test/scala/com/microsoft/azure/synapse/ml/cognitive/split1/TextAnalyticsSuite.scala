@@ -469,50 +469,31 @@ class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint
     .setOutputCol("response")
     .setErrorCol("error")
 
+  // TODO - add test with batched input
+
   test("Basic Usage") {
     val results = n.transform(df).cache()
     results.printSchema() // TODO - debug remove
     results.show() // TODO - debug remove
     
     val foo = results.collect(); // TODO - debug remove
+    val response = results.select("response") // TODO - debug remove
+    val responseRows = response.collect() // TODO - debug remove
 
-    val response = results.select("response")
-    val responseRows = response.collect()
+    val entityRows = results.withColumn("entityRecognition",
+      col("response")
+        .getItem("entityRecognition")
+        .getItem(0)
+        .getItem("documents")
+        .getItem(0)
+        .getItem("entities")
+        .getItem(0)
+      ).select("entityRecognition")
+      .collect()
 
-    val foobar = 1
-    // println(responseRows(0).get(0).asInstanceOf[GenericRowWithSchema].get(3).asInstanceOf[GenericRowWithSchema])
+    var entityRow = entityRows(0)
+    var entityResult = entityRow(0).asInstanceOf[GenericRowWithSchema]
 
-      val entityRows = results.withColumn("entityRecognition",
-        col("response")
-          .getItem("entityRecognition")
-          .getItem(0)
-          .getItem("documents")
-          .getItem(0)
-          .getItem("entities")
-          .getItem(0)
-        ).select("entityRecognition")
-        .collect()
-
-      var entityRow = entityRows(0)
-      var entityResult = entityRow(0).asInstanceOf[GenericRowWithSchema]
-
-
-            // val entityRows = results.withColumn("entityRecognition",        col("response")          .getItem("entityRecognition")          .getItem(0)          .getItem("documents")          .getItem(0)          .getItem("entities")          .getItem(0)        ).select("entity")
-
-
-    // val entityRows = results.withColumn("entity",
-    //   col("response")
-    //     .getItem("tasks")
-    //     .getItem("entityRecognitionTasks")
-    //     .getItem(0)
-    //     .getItem("results")
-    //     .getItem("documents")
-    //     .getItem(0)
-    //     .getItem("entities")
-    //     .getItem(0)
-    //   ).select("entity")
-
-    // var entityRow = entityRows.collect().head(0).asInstanceOf[GenericRowWithSchema]
     println("entities")
     println(entityResult)
 
@@ -521,6 +502,9 @@ class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint
     assert(entityResult.getAs[Int]("length") === 4)
     assert(entityResult.getAs[Double]("confidenceScore") > 0.7)
     assert(entityResult.getAs[String]("category") === "Event")
+
+
+    // TODO - add assertions for remaining task results
   
     // val keyPhraseRows = results.withColumn("keyPhrase",
     //   col("response")
