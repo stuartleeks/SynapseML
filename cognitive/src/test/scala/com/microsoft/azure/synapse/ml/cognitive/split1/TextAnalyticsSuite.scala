@@ -479,7 +479,25 @@ class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint
     val response = results.select("response")
     val responseRows = response.collect()
 
+    val foobar = 1
     // println(responseRows(0).get(0).asInstanceOf[GenericRowWithSchema].get(3).asInstanceOf[GenericRowWithSchema])
+
+      val entityRows = results.withColumn("entityRecognition",
+        col("response")
+          .getItem("entityRecognition")
+          .getItem(0)
+          .getItem("documents")
+          .getItem(0)
+          .getItem("entities")
+          .getItem(0)
+        ).select("entityRecognition")
+        .collect()
+
+      var entityRow = entityRows(0)
+      var entityResult = entityRow(0).asInstanceOf[GenericRowWithSchema]
+
+
+            // val entityRows = results.withColumn("entityRecognition",        col("response")          .getItem("entityRecognition")          .getItem(0)          .getItem("documents")          .getItem(0)          .getItem("entities")          .getItem(0)        ).select("entity")
 
 
     // val entityRows = results.withColumn("entity",
@@ -495,14 +513,14 @@ class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint
     //   ).select("entity")
 
     // var entityRow = entityRows.collect().head(0).asInstanceOf[GenericRowWithSchema]
-    // println("entities")
-    // println(entityRow)
+    println("entities")
+    println(entityResult)
 
-    // assert(entityRow.getAs[String]("text") === "trip")
-    // assert(entityRow.getAs[Int]("offset") === 18)
-    // assert(entityRow.getAs[Int]("length") === 4)
-    // assert(entityRow.getAs[Double]("confidenceScore") > 0.7)
-    // assert(entityRow.getAs[String]("category") === "Event")
+    assert(entityResult.getAs[String]("text") === "trip")
+    assert(entityResult.getAs[Int]("offset") === 18)
+    assert(entityResult.getAs[Int]("length") === 4)
+    assert(entityResult.getAs[Double]("confidenceScore") > 0.7)
+    assert(entityResult.getAs[String]("category") === "Event")
   
     // val keyPhraseRows = results.withColumn("keyPhrase",
     //   col("response")

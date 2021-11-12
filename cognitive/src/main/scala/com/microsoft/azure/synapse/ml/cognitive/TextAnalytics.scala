@@ -18,6 +18,7 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
+import scala.collection.mutable.WrappedArray
 
 import java.net.URI
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
@@ -443,13 +444,11 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
     }
   }
   override protected def getInternalTransformer(schema: StructType): PipelineModel = {
-    val dynamicInputParamColName = DatasetExtensions.findUnusedColumnName("dynamicInput", schema)
+    val dynamicParamColName = DatasetExtensions.findUnusedColumnName("dynamicInput", schema)
     val badColumns = getVectorParamMap.values.toSet.diff(schema.fieldNames.toSet)
     assert(badColumns.isEmpty,
     s"Could not find dynamic input columns: $badColumns in columns: ${schema.fieldNames.toSet}")
     
-    val dynamicOutputParamColName = DatasetExtensions.findUnusedColumnName("dynamicOutput", schema)
-
 
     val missingRequiredParams = this.getRequiredParams.filter {
       p => this.get(p).isEmpty && this.getDefault(p).isEmpty
@@ -512,7 +511,7 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
 
     val unpackBatchUDF = UDFUtils.oldUdf({ rowOpt: Row =>
       Option(rowOpt).map { row =>
-        val tasks = row.getAs[GenericRowWithSchema](3)
+        val tasks = row.getAs[GenericRowWithSchema]("tasks")
         // val documents = row.getSeq[Row](1).map(doc =>
         //   (doc.getString(0).toInt, doc)).toMap
         // val errors = row.getSeq[Row](2).map(err => (err.getString(0).toInt, err)).toMap
@@ -524,15 +523,19 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
         // )
         // rows
 
+        // row.getAs[GenericRowWithSchema]("tasks").getAs[WrappedArray[TAAnalyzeResponseTaskResults[NERDocV3]]]("entityRecognitionTasks")
 
+        val entityRecognitionTasks = row.getAs[GenericRowWithSchema]("tasks").getAs[WrappedArray[GenericRowWithSchema]]("entityRecognitionTasks")
+        val entityRecognitionTaskResults = entityRecognitionTasks.map(x=>x.getAs[GenericRowWithSchema]("results"))
         // tasks
-        Row.fromSeq(Seq(
+        val rowSeq = Seq(
+          entityRecognitionTaskResults,
           None,
           None,
           None,
           None,
-          None,
-        ))
+        )
+        Row.fromSeq(rowSeq)
       }
     }, innerResponseDataType
     )
@@ -540,14 +543,10 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
 
     val stages = reshapeCols.map(_._1).toArray ++ Array(
       Lambda(_.withColumn(
-        dynamicInputParamColName,
+        dynamicParamColName,
         struct(columnsToGroup: _*))),
-      // Lambda(_.withColumn(
-      //   dynamicOutputParamColName,
-      //   lit("None"))),
       new SimpleHTTPTransformer()
-        .setInputCol(dynamicInputParamColName)
-        // .setOutputCol(dynamicOutputParamColName)
+        .setInputCol(dynamicParamColName)
         .setOutputCol(getOutputCol)
         .setInputParser(getInternalInputParser(schema))
         .setOutputParser(getInternalOutputParser(schema))
@@ -557,11 +556,10 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
         .setErrorCol(getErrorCol),
       new UDFTransformer()
         .setInputCol(getOutputCol)
-        // .setInputCol(dynamicOutputParamColName)
         .setOutputCol(getOutputCol)
         .setUDF(unpackBatchUDF),
       new DropColumns().setCols(Array(
-        dynamicInputParamColName) ++ newColumnMapping.values.toArray.asInstanceOf[Array[String]])
+        dynamicParamColName) ++ newColumnMapping.values.toArray.asInstanceOf[Array[String]])
     )
 
     NamespaceInjections.pipelineModel(stages)
