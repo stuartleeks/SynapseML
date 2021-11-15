@@ -209,33 +209,11 @@ object TAAnalyzeResponse extends SparkBindings[TAAnalyzeResponse]
 case class TAAnalyzeResultTaskResults[T](document: Option[T], // TODO - apply reshaping in the UDF? Similar to stripping id from results in TextAnalyticsBase.getInternalTransformer implementation
                                            error: Option[TAError])
 
-// case class TAAnalyzeResult(entityRecognition: Option[TAAnalyzeResultTaskResults[NERDocV3]],
-//                            entityLinking: Option[TAAnalyzeResultTaskResults[EntityV3]],
-//                            entityRecognitionPii: Option[TAAnalyzeResultTaskResults[PIIDocV3]],
-//                            keyPhraseExtraction: Option[TAAnalyzeResultTaskResults[KeyPhraseScoreV3]],
-//                            sentimentAnalysis: Option[TAAnalyzeResultTaskResults[SentimentScoredDocumentV3]])
-
-
-//  case class TAAnalyzeResult(entityRecognition: Option[TAAnalyzeResultTaskResults[String]])
-//  case class TAAnalyzeResult(entityRecognition: Option[Seq[String]])
-
-// case class Foo[T](document: Option[T],
-//                   error : Option[String]
-//                   )
-
-//  case class TAAnalyzeResult(entityRecognition: Option[Foo[String]])
-// case class Bar[T](value: Option[T])
-// case class Bar[T](value: Option[T], value2: Option[String])
-case class Bar[T](value: Option[T], value2: Option[TAError])
 case class TAAnalyzeResult(entityRecognition: Option[TAAnalyzeResultTaskResults[NERDocV3]],
-                            bar: Option[TAAnalyzeResultTaskResults[String]])
-// case class TAAnalyzeResult(entityRecognition: Option[String],
-//                             bar: Option[TAAnalyzeResultTaskResults[String]])
-
-
-
-// case class TAAnalyzeResult(test1: Option[Seq[String]],
-//                            test2: Option[Seq[Int]])
+                           entityLinking: Option[TAAnalyzeResultTaskResults[EntityV3]],
+                           entityRecognitionPii: Option[TAAnalyzeResultTaskResults[PIIDocV3]],
+                           keyPhraseExtraction: Option[TAAnalyzeResultTaskResults[KeyPhraseScoreV3]],
+                           sentimentAnalysis: Option[TAAnalyzeResultTaskResults[SentimentScoredDocumentV3]])
 
 object TAAnalyzeResults extends SparkBindings[TAAnalyzeResult]
 
