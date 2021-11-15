@@ -205,16 +205,26 @@ object TAAnalyzeResponse extends SparkBindings[TAAnalyzeResponse]
 // Transformer output schema per input row
 // TODO - add other task types
 // TODO - extend to handle multiple instances of each task type
-case class TAAnalyzeResult(entityRecognition: Option[Seq[TAAnalyzeResponseTaskResults[NERDocV3]]],
-                           entityLinking: Option[Seq[TAAnalyzeResponseTaskResults[EntityV3]]],
-                           entityRecognitionPii: Option[Seq[TAAnalyzeResponseTaskResults[PIIDocV3]]],
-                           keyPhraseExtraction: Option[Seq[TAAnalyzeResponseTaskResults[KeyPhraseScoreV3]]],
-                           sentimentAnalysis: Option[Seq[TAAnalyzeResponseTaskResults[SentimentScoredDocumentV3]]])
+
+case class TAAnalyzeResultTaskResults[T](document: Option[T], // TODO - apply reshaping in the UDF? Similar to stripping id from results in TextAnalyticsBase.getInternalTransformer implementation
+                                           error: Option[TAError])
+
+// case class TAAnalyzeResult(entityRecognition: Option[TAAnalyzeResultTaskResults[NERDocV3]],
+//                            entityLinking: Option[TAAnalyzeResultTaskResults[EntityV3]],
+//                            entityRecognitionPii: Option[TAAnalyzeResultTaskResults[PIIDocV3]],
+//                            keyPhraseExtraction: Option[TAAnalyzeResultTaskResults[KeyPhraseScoreV3]],
+//                            sentimentAnalysis: Option[TAAnalyzeResultTaskResults[SentimentScoredDocumentV3]])
+
+
+//  case class TAAnalyzeResult(entityRecognition: Option[TAAnalyzeResultTaskResults[String]])
+ case class TAAnalyzeResult(entityRecognition: Option[Seq[String]])
+
+
 
 // case class TAAnalyzeResult(test1: Option[Seq[String]],
 //                            test2: Option[Seq[Int]])
 
-object TAAnalyzeResult extends SparkBindings[TAAnalyzeResult]
+object TAAnalyzeResults extends SparkBindings[TAAnalyzeResult]
 
 
 

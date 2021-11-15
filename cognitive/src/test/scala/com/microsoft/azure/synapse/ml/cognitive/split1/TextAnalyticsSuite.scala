@@ -292,7 +292,7 @@ class KeyPhraseExtractorV3Suite extends TransformerFuzzing[KeyPhraseExtractor] w
   import spark.implicits._
 
   lazy val df: DataFrame = Seq(
-    ("en", "Hello world. This is some input text that I love."),
+    ("enx", "Hello world. This is some input text that I love."),
     ("fr", "Bonjour tout le monde"),
     ("es", "La carretera estaba atascada. Había mucho tráfico el día de ayer."),
     ("en", null)
@@ -325,14 +325,14 @@ class NERSuite extends TransformerFuzzing[NERV2] with TextEndpoint {
   import spark.implicits._
 
   lazy val df: DataFrame = Seq(
-    ("1", "en", "Jeff bought three dozen eggs because there was a 50% discount."),
+    ("1", "enx", "Jeff bought three dozen eggs because there was a 50% discount."),
     ("2", "en", "The Great Depression began in 1929. By 1933, the GDP in America fell by 25%.")
   ).toDF("id", "language", "text")
 
   lazy val n: NERV2 = new NERV2()
     .setSubscriptionKey(textKey)
     .setLocation(textApiLocation)
-    .setLanguage("en")
+    .setLanguageCol("language")
     .setOutputCol("response")
 
   test("Basic Usage") {
@@ -470,6 +470,7 @@ class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint
     .setErrorCol("error")
 
   // TODO - add test with batched input
+  // TODO - add test with bad language code (incl as part of a batch)
 
   test("Basic Usage") {
     val results = n.transform(df).cache()
@@ -482,9 +483,8 @@ class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint
 
     val entityRows = results.withColumn("entityRecognition",
       col("response")
-        .getItem("entityRecognition")
         .getItem(0)
-        .getItem("documents")
+        .getItem("entityRecognition")
         .getItem(0)
         .getItem("entities")
         .getItem(0)

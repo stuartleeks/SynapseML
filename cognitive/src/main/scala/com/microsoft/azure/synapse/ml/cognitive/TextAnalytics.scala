@@ -486,7 +486,7 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
     }.toSeq
 
     // val innerResponseDataType = TAAnalyzeResponse.schema
-    val innerResponseDataType = TAAnalyzeResult.schema
+    val innerResponseDataType = TAAnalyzeResults.schema
     val innerFields = innerResponseDataType.fields.filter(_.name != "id")
 
     // val unpackBatchUDF = UDFUtils.oldUdf({ rowOpt: Row =>
@@ -527,17 +527,25 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
 
         val entityRecognitionTasks = row.getAs[GenericRowWithSchema]("tasks").getAs[WrappedArray[GenericRowWithSchema]]("entityRecognitionTasks")
         val entityRecognitionTaskResults = entityRecognitionTasks.map(x=>x.getAs[GenericRowWithSchema]("results"))
-        // tasks
+
+        // // tasks
+        // val rowSeq = Seq(
+        //   entityRecognitionTaskResults,
+        //   None,
+        //   None,
+        //   None,
+        //   None,
+        // )
+        // Row.fromSeq(rowSeq)
         val rowSeq = Seq(
-          entityRecognitionTaskResults,
-          None,
-          None,
-          None,
-          None,
+          "test",
         )
-        Row.fromSeq(rowSeq)
+        val resultRow = Row.fromSeq(Seq(rowSeq))
+        val results = Seq(resultRow)
+        results
       }
-    }, innerResponseDataType
+    // }, innerResponseDataType
+    }, ArrayType(innerResponseDataType)
     )
 
 
