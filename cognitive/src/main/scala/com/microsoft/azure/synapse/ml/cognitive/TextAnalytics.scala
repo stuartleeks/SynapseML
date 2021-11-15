@@ -487,18 +487,23 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
     val innerResponseDataType = TAAnalyzeResults.schema
     
     def getTaskRows(tasksRow: GenericRowWithSchema, taskName: String, documentIndex: Int) : Option[Seq[Row]] ={
-      val taskResults = tasksRow
-                          .getAs[WrappedArray[GenericRowWithSchema]](taskName)
-                          .map(x=>x.getAs[GenericRowWithSchema]("results"))
-      val rows = taskResults.map(result => {
-        val documents = result.getAs[WrappedArray[GenericRowWithSchema]]("documents")
-        val errors = result.getAs[WrappedArray[GenericRowWithSchema]]("errors")
-        val doc = documents.find{d=> d.getString(0).toInt == documentIndex}
-        var error = errors.find{e => e.getString(0).toInt == documentIndex}
-        val entityRecognitionRow = Row.fromSeq(Seq(doc, None)) // result/errors per task, per document
-        entityRecognitionRow
-      })
-      Some(rows)
+      val namedTaskRow = tasksRow
+                            .getAs[WrappedArray[GenericRowWithSchema]](taskName)
+      if (namedTaskRow == null){
+        None
+      } else {
+        val taskResults = namedTaskRow
+                            .map(x=>x.getAs[GenericRowWithSchema]("results"))
+        val rows = taskResults.map(result => {
+          val documents = result.getAs[WrappedArray[GenericRowWithSchema]]("documents")
+          val errors = result.getAs[WrappedArray[GenericRowWithSchema]]("errors")
+          val doc = documents.find{d=> d.getString(0).toInt == documentIndex}
+          var error = errors.find{e => e.getString(0).toInt == documentIndex}
+          val entityRecognitionRow = Row.fromSeq(Seq(doc, None)) // result/errors per task, per document
+          entityRecognitionRow
+        })
+        Some(rows)
+      }
     }
 
     val unpackBatchUDF = UDFUtils.oldUdf({ rowOpt: Row =>
@@ -515,9 +520,12 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
 
         val rows: Seq[Row] = (0 until (docCount + errorCount)).map(i =>{
           val entityRecognitionRows = getTaskRows(tasks, "entityRecognitionTasks", i)
+          val entityLinkingRows = None// getTaskRows(tasks, "entityLinkingTasks", i) // TODO debug NumberFormatException
+          val entityRecognitionPiiRows = getTaskRows(tasks, "entityRecognitionPiiTasks", i)
           val keyPhraseRows = getTaskRows(tasks, "keyPhraseExtractionTasks", i)
-          // TODO - handle other task types
-          val taaResult = Seq(entityRecognitionRows, None, None, keyPhraseRows, None) // TAAnalyzeResult struct
+          val sentimentAnalysisRows = getTaskRows(tasks, "sentimentAnalysisTasks", i)
+
+          val taaResult = Seq(entityRecognitionRows, entityLinkingRows, entityRecognitionPiiRows, keyPhraseRows, sentimentAnalysisRows) // TAAnalyzeResult struct
           val resultRow = Row.fromSeq(taaResult)
           resultRow
         })
