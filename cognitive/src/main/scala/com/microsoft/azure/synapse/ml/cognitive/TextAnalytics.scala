@@ -535,12 +535,19 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
         val errorCount = entityRecognitionTaskResults(0).getAs[WrappedArray[GenericRowWithSchema]]("errors").size
 
         val rows: Seq[Row] = (0 until (docCount + errorCount)).map(i =>{
-          val entityRecognitionTaskResultsDocuments = entityRecognitionTaskResults(0).getAs[WrappedArray[GenericRowWithSchema]]("documents")
-          val entityRecognitionTaskResultsErrors = entityRecognitionTaskResults(0).getAs[WrappedArray[GenericRowWithSchema]]("errors")
-          val doc = entityRecognitionTaskResultsDocuments(i)
+          val entityRecognitionRows: Seq[Row] = entityRecognitionTaskResults.map(result => {
+            val entityRecognitionTaskResultsDocuments = result.getAs[WrappedArray[GenericRowWithSchema]]("documents")
+            val entityRecognitionTaskResultsErrors = result.getAs[WrappedArray[GenericRowWithSchema]]("errors")
+            val doc = entityRecognitionTaskResultsDocuments(i)// TODO handle error vs doc
+            val entityRecognitionRow = Row.fromSeq(Seq(doc, None)) // result/errors per task, per document
+            entityRecognitionRow
+          })
+          // val entityRecognitionTaskResultsDocuments = entityRecognitionTaskResults(0).getAs[WrappedArray[GenericRowWithSchema]]("documents")
+          // val entityRecognitionTaskResultsErrors = entityRecognitionTaskResults(0).getAs[WrappedArray[GenericRowWithSchema]]("errors")
+          // val doc = entityRecognitionTaskResultsDocuments(i)
 
-          val entityRecognitionRow = Row.fromSeq(Seq(doc, None)) // result/errors per task, per document
-          val entityRecognitionRows = Seq(entityRecognitionRow) // element per entity recognition task
+          // val entityRecognitionRow = Row.fromSeq(Seq(doc, None)) // result/errors per task, per document
+          // val entityRecognitionRows = Seq(entityRecognitionRow) // element per entity recognition task
           val taaResult = Seq(entityRecognitionRows, None, None, None, None) // TAAnalyzeResult struct
           val resultRow = Row.fromSeq(taaResult)
           resultRow
