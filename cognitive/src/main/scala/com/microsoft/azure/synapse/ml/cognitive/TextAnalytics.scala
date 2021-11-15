@@ -527,6 +527,9 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
 
         val entityRecognitionTasks = row.getAs[GenericRowWithSchema]("tasks").getAs[WrappedArray[GenericRowWithSchema]]("entityRecognitionTasks")
         val entityRecognitionTaskResults = entityRecognitionTasks.map(x=>x.getAs[GenericRowWithSchema]("results"))
+        // TODO - need to handle a set of tasks
+        val entityRecognitionTaskResultsDocuments = entityRecognitionTaskResults(0).getAs[WrappedArray[GenericRowWithSchema]]("documents")
+        val doc = entityRecognitionTaskResultsDocuments(0)
 
         val taaResult = Seq("test", Row.fromSeq(Seq("bar", None)))
         val resultRow = Row.fromSeq(taaResult)
