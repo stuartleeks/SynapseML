@@ -541,16 +541,14 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
         //   "test",
         //   // None
         // )
-        // val taaResult = Seq(foo)
-        // val taaResult = Seq("test", Seq("bar"))
-        val taaResult = Seq("test", Row.fromSeq(Seq("bar", "bar2")))
+        val taaResult = Seq("test", Row.fromSeq(Seq("bar", None)))
         val resultRow = Row.fromSeq(taaResult)
-        resultRow
-        // val results = Seq(resultRow)
-        // results
+        // resultRow
+        val results = Seq(resultRow)
+        results
       }
-    }, innerResponseDataType
-    // }, ArrayType(innerResponseDataType)
+    // }, innerResponseDataType
+    }, ArrayType(innerResponseDataType)
     )
 
 
