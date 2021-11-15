@@ -227,8 +227,10 @@ case class TAAnalyzeResultTaskResults[T](document: Option[T], // TODO - apply re
 // case class Bar[T](value: Option[T])
 // case class Bar[T](value: Option[T], value2: Option[String])
 case class Bar[T](value: Option[T], value2: Option[TAError])
-case class TAAnalyzeResult(entityRecognition: Option[String],
+case class TAAnalyzeResult(entityRecognition: Option[TAAnalyzeResultTaskResults[NERDocV3]],
                             bar: Option[TAAnalyzeResultTaskResults[String]])
+// case class TAAnalyzeResult(entityRecognition: Option[String],
+//                             bar: Option[TAAnalyzeResultTaskResults[String]])
 
 
 

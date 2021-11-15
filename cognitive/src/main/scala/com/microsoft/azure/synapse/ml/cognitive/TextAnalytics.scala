@@ -531,7 +531,7 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
         val entityRecognitionTaskResultsDocuments = entityRecognitionTaskResults(0).getAs[WrappedArray[GenericRowWithSchema]]("documents")
         val doc = entityRecognitionTaskResultsDocuments(0)
 
-        val taaResult = Seq("test", Row.fromSeq(Seq("bar", None)))
+        val taaResult = Seq(Row.fromSeq(Seq(doc, None)), Row.fromSeq(Seq("bar", None)))
         val resultRow = Row.fromSeq(taaResult)
         val results = Seq(resultRow)
         results
