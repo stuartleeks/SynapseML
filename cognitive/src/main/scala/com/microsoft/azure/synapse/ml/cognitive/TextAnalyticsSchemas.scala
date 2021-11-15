@@ -206,7 +206,7 @@ object TAAnalyzeResponse extends SparkBindings[TAAnalyzeResponse]
 // TODO - add other task types
 // TODO - extend to handle multiple instances of each task type
 
-case class TAAnalyzeResultTaskResults[T](document: Option[T], // TODO - apply reshaping in the UDF? Similar to stripping id from results in TextAnalyticsBase.getInternalTransformer implementation
+case class TAAnalyzeResultTaskResults[T](result: Option[T], // TODO - apply reshaping in the UDF? Similar to stripping id from results in TextAnalyticsBase.getInternalTransformer implementation
                                            error: Option[TAError])
 
 case class TAAnalyzeResult(entityRecognition: Option[Seq[TAAnalyzeResultTaskResults[NERDocV3]]],
