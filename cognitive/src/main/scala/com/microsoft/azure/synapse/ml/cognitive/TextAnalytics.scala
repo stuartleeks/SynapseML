@@ -485,18 +485,28 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
     }.toSeq
 
     val innerResponseDataType = TAAnalyzeResults.schema
+    
+    def getTaskRows(tasksRow: GenericRowWithSchema, taskName: String, documentIndex: Int) : Option[Seq[Row]] ={
+      val taskResults = tasksRow
+                          .getAs[WrappedArray[GenericRowWithSchema]](taskName)
+                          .map(x=>x.getAs[GenericRowWithSchema]("results"))
+      val rows = taskResults.map(result => {
+        val documents = result.getAs[WrappedArray[GenericRowWithSchema]]("documents")
+        val errors = result.getAs[WrappedArray[GenericRowWithSchema]]("errors")
+        val doc = documents.find{d=> d.getString(0).toInt == documentIndex}
+        var error = errors.find{e => e.getString(0).toInt == documentIndex}
+        val entityRecognitionRow = Row.fromSeq(Seq(doc, None)) // result/errors per task, per document
+        entityRecognitionRow
+      })
+      Some(rows)
+    }
 
     val unpackBatchUDF = UDFUtils.oldUdf({ rowOpt: Row =>
       Option(rowOpt).map { row =>
         val tasks = row.getAs[GenericRowWithSchema]("tasks")
-        val entityRecognitionTaskResults = row
-                                            .getAs[GenericRowWithSchema]("tasks")
+        val entityRecognitionTaskResults = tasks
                                             .getAs[WrappedArray[GenericRowWithSchema]]("entityRecognitionTasks")
                                             .map(x=>x.getAs[GenericRowWithSchema]("results"))
-        val keyPhraseTaskResults = row
-                                    .getAs[GenericRowWithSchema]("tasks")
-                                    .getAs[WrappedArray[GenericRowWithSchema]]("keyPhraseExtractionTasks")
-                                    .map(x=>x.getAs[GenericRowWithSchema]("results"))
 
         // Determine the total number of documents (successful docs + errors)
         // TODO - we need to handle the fact that entityRecognition might not have been specified
@@ -504,22 +514,8 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
         val errorCount = entityRecognitionTaskResults(0).getAs[WrappedArray[GenericRowWithSchema]]("errors").size
 
         val rows: Seq[Row] = (0 until (docCount + errorCount)).map(i =>{
-          val entityRecognitionRows: Seq[Row] = entityRecognitionTaskResults.map(result => {
-            val documents = result.getAs[WrappedArray[GenericRowWithSchema]]("documents")
-            val errors = result.getAs[WrappedArray[GenericRowWithSchema]]("errors")
-            val doc = documents.find{d=> d.getString(0).toInt == i}
-            var error = errors.find{e => e.getString(0).toInt == i}
-            val entityRecognitionRow = Row.fromSeq(Seq(doc, None)) // result/errors per task, per document
-            entityRecognitionRow
-          })
-          val keyPhraseRows: Seq[Row] = keyPhraseTaskResults.map(result => {
-            val documents = result.getAs[WrappedArray[GenericRowWithSchema]]("documents")
-            val errors = result.getAs[WrappedArray[GenericRowWithSchema]]("errors")
-            val doc = documents.find{d=> d.getString(0).toInt == i}
-            var error = errors.find{e => e.getString(0).toInt == i}
-            val entityRecognitionRow = Row.fromSeq(Seq(doc, error)) // result/errors per task, per document
-            entityRecognitionRow
-          })
+          val entityRecognitionRows = getTaskRows(tasks, "entityRecognitionTasks", i)
+          val keyPhraseRows = getTaskRows(tasks, "keyPhraseExtractionTasks", i)
           // TODO - handle other task types
           val taaResult = Seq(entityRecognitionRows, None, None, keyPhraseRows, None) // TAAnalyzeResult struct
           val resultRow = Row.fromSeq(taaResult)
