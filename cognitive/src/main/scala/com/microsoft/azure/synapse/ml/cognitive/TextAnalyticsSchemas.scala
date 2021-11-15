@@ -209,11 +209,11 @@ object TAAnalyzeResponse extends SparkBindings[TAAnalyzeResponse]
 case class TAAnalyzeResultTaskResults[T](document: Option[T], // TODO - apply reshaping in the UDF? Similar to stripping id from results in TextAnalyticsBase.getInternalTransformer implementation
                                            error: Option[TAError])
 
-case class TAAnalyzeResult(entityRecognition: Option[TAAnalyzeResultTaskResults[NERDocV3]],
-                           entityLinking: Option[TAAnalyzeResultTaskResults[EntityV3]],
-                           entityRecognitionPii: Option[TAAnalyzeResultTaskResults[PIIDocV3]],
-                           keyPhraseExtraction: Option[TAAnalyzeResultTaskResults[KeyPhraseScoreV3]],
-                           sentimentAnalysis: Option[TAAnalyzeResultTaskResults[SentimentScoredDocumentV3]])
+case class TAAnalyzeResult(entityRecognition: Option[Seq[TAAnalyzeResultTaskResults[NERDocV3]]],
+                           entityLinking: Option[Seq[TAAnalyzeResultTaskResults[EntityV3]]],
+                           entityRecognitionPii: Option[Seq[TAAnalyzeResultTaskResults[PIIDocV3]]],
+                           keyPhraseExtraction: Option[Seq[TAAnalyzeResultTaskResults[KeyPhraseScoreV3]]],
+                           sentimentAnalysis: Option[Seq[TAAnalyzeResultTaskResults[SentimentScoredDocumentV3]]])
 
 object TAAnalyzeResults extends SparkBindings[TAAnalyzeResult]
 
