@@ -528,22 +528,8 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
         val entityRecognitionTasks = row.getAs[GenericRowWithSchema]("tasks").getAs[WrappedArray[GenericRowWithSchema]]("entityRecognitionTasks")
         val entityRecognitionTaskResults = entityRecognitionTasks.map(x=>x.getAs[GenericRowWithSchema]("results"))
 
-        // // tasks
-        // val rowSeq = Seq(
-        //   entityRecognitionTaskResults,
-        //   None,
-        //   None,
-        //   None,
-        //   None,
-        // )
-        // Row.fromSeq(rowSeq)
-        // val foo =  Seq(
-        //   "test",
-        //   // None
-        // )
         val taaResult = Seq("test", Row.fromSeq(Seq("bar", None)))
         val resultRow = Row.fromSeq(taaResult)
-        // resultRow
         val results = Seq(resultRow)
         results
       }
