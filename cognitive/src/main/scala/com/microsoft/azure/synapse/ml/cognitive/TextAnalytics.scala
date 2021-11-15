@@ -523,11 +523,14 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
         // )
         // rows
 
-        // row.getAs[GenericRowWithSchema]("tasks").getAs[WrappedArray[TAAnalyzeResponseTaskResults[NERDocV3]]]("entityRecognitionTasks")
-
-        val entityRecognitionTasks = row.getAs[GenericRowWithSchema]("tasks").getAs[WrappedArray[GenericRowWithSchema]]("entityRecognitionTasks")
-        val entityRecognitionTaskResults = entityRecognitionTasks.map(x=>x.getAs[GenericRowWithSchema]("results"))
-        // TODO - need to handle a set of tasks
+        val entityRecognitionTaskResults = row
+                                            .getAs[GenericRowWithSchema]("tasks")
+                                            .getAs[WrappedArray[GenericRowWithSchema]]("entityRecognitionTasks")
+                                            .map(x=>x.getAs[GenericRowWithSchema]("results"))
+        val keyPhraseTaskResults = row
+                                    .getAs[GenericRowWithSchema]("tasks")
+                                    .getAs[WrappedArray[GenericRowWithSchema]]("keyPhraseExtractionTasks")
+                                    .map(x=>x.getAs[GenericRowWithSchema]("results"))
 
         // Determine the total number of documents (successful docs + errors)
         // TODO - we need to handle the fact that entityRecognition might not have been specified
@@ -536,13 +539,20 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
 
         val rows: Seq[Row] = (0 until (docCount + errorCount)).map(i =>{
           val entityRecognitionRows: Seq[Row] = entityRecognitionTaskResults.map(result => {
-            val entityRecognitionTaskResultsDocuments = result.getAs[WrappedArray[GenericRowWithSchema]]("documents")
-            val entityRecognitionTaskResultsErrors = result.getAs[WrappedArray[GenericRowWithSchema]]("errors")
-            val doc = entityRecognitionTaskResultsDocuments(i)// TODO handle error vs doc
+            val documents = result.getAs[WrappedArray[GenericRowWithSchema]]("documents")
+            val errors = result.getAs[WrappedArray[GenericRowWithSchema]]("errors")
+            val doc = documents(i)// TODO handle error vs doc
             val entityRecognitionRow = Row.fromSeq(Seq(doc, None)) // result/errors per task, per document
             entityRecognitionRow
           })
-          val taaResult = Seq(entityRecognitionRows, None, None, None, None) // TAAnalyzeResult struct
+          val keyPhraseRows: Seq[Row] = keyPhraseTaskResults.map(result => {
+            val documents = result.getAs[WrappedArray[GenericRowWithSchema]]("documents")
+            val errors = result.getAs[WrappedArray[GenericRowWithSchema]]("errors")
+            val doc = documents(i)// TODO handle error vs doc
+            val entityRecognitionRow = Row.fromSeq(Seq(doc, None)) // result/errors per task, per document
+            entityRecognitionRow
+          })
+          val taaResult = Seq(entityRecognitionRows, None, None, keyPhraseRows, None) // TAAnalyzeResult struct
           val resultRow = Row.fromSeq(taaResult)
           resultRow
         })
