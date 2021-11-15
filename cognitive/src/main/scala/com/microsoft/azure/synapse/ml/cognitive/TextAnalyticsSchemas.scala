@@ -217,7 +217,16 @@ case class TAAnalyzeResultTaskResults[T](document: Option[T], // TODO - apply re
 
 
 //  case class TAAnalyzeResult(entityRecognition: Option[TAAnalyzeResultTaskResults[String]])
- case class TAAnalyzeResult(entityRecognition: Option[Seq[String]])
+//  case class TAAnalyzeResult(entityRecognition: Option[Seq[String]])
+
+// case class Foo[T](document: Option[T],
+//                   error : Option[String]
+//                   )
+
+//  case class TAAnalyzeResult(entityRecognition: Option[Foo[String]])
+case class Bar[T](value: Option[T])
+ case class TAAnalyzeResult(entityRecognition: Option[String],
+                            bar: Option[Bar[String]])
 
 
 
