@@ -531,9 +531,9 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
         val entityRecognitionTaskResultsDocuments = entityRecognitionTaskResults(0).getAs[WrappedArray[GenericRowWithSchema]]("documents")
         val doc = entityRecognitionTaskResultsDocuments(0)
 
-        val entityRecognitionRow = Row.fromSeq(Seq(doc, None))
-        val taaResult = Seq(Seq(entityRecognitionRow), None, None, None, None)
-        // val taaResult = Seq(entityRecognitionRow, Row.fromSeq(Seq("bar", None)))
+        val entityRecognitionRow = Row.fromSeq(Seq(doc, None)) // result/errors per task, per document
+        val entityRecognitionRows = Seq(entityRecognitionRow) // element per entity recognition task
+        val taaResult = Seq(entityRecognitionRows, None, None, None, None) // TAAnalyzeResult struct
         val resultRow = Row.fromSeq(taaResult)
         val results = Seq(resultRow) // element per input row (i.e. per document)
         results
