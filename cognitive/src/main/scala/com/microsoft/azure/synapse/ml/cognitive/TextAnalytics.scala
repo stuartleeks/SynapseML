@@ -543,7 +543,7 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
         // )
         // val taaResult = Seq(foo)
         // val taaResult = Seq("test", Seq("bar"))
-        val taaResult = Seq("test", Row.fromSeq(Seq("bar")))
+        val taaResult = Seq("test", Row.fromSeq(Seq("bar", "bar2")))
         val resultRow = Row.fromSeq(taaResult)
         resultRow
         // val results = Seq(resultRow)
