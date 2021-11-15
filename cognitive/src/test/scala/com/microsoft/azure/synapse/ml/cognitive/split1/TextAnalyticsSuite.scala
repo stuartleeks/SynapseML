@@ -506,19 +506,23 @@ class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint
 
     // TODO - add assertions for remaining task results
   
-    // val keyPhraseRows = results.withColumn("keyPhrase",
-    //   col("response")
-    //     .getItem(0)
-    //     .getItem("keyPhraseExtraction")
-    //     .getItem(0)
-    //     .getItem("result")
-    //     .getItem("keyPhrases")
-    //     .getItem(0)
-    //   ).select("keyPhrase")
+    val keyPhraseRows = results.withColumn("keyPhrase",
+      col("response")
+        .getItem(0)
+        .getItem("keyPhraseExtraction")
+        .getItem(0)
+        .getItem("result")
+        .getItem("keyPhrases")
+        .getItem(0)
+      ).select("keyPhrase")
+      .collect()
 
-    // var keyPhraseRow = keyPhraseRows.collect().head(0).asInstanceOf[WrappedArray[String]]
-    // println("keyPhrases")
-    // println(keyPhraseRow)
+    var keyPhraseRow = keyPhraseRows(0).asInstanceOf[GenericRowWithSchema]
+    println("keyPhrases")
+    println(keyPhraseRow)
+
+    assert(keyPhraseRow.getAs[String](0) === "wonderful trip")
+
   }
 
   override def testObjects(): Seq[TestObject[TextAnalyze]] =
