@@ -225,6 +225,7 @@ case class TAAnalyzeResultTaskResults[T](document: Option[T], // TODO - apply re
 
 //  case class TAAnalyzeResult(entityRecognition: Option[Foo[String]])
 case class Bar[T](value: Option[T])
+// case class Bar[T](value: Option[T], value2: Option[String])
  case class TAAnalyzeResult(entityRecognition: Option[String],
                             bar: Option[Bar[String]])
 
