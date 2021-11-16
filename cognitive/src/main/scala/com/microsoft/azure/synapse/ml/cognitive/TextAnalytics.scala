@@ -497,8 +497,8 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
         val rows = taskResults.map(result => {
           val documents = result.getAs[WrappedArray[GenericRowWithSchema]]("documents")
           val errors = result.getAs[WrappedArray[GenericRowWithSchema]]("errors")
-          val doc = documents.find{d=> d.getString(0).toInt == documentIndex}
-          var error = errors.find{e => e.getString(0).toInt == documentIndex}
+          val doc = documents.find{d=> d.getAs[String]("id").toInt == documentIndex}
+          var error = errors.find{e => e.getAs[String]("id").toInt == documentIndex}
           val entityRecognitionRow = Row.fromSeq(Seq(doc, None)) // result/errors per task, per document
           entityRecognitionRow
         })
@@ -520,7 +520,7 @@ val text = new ServiceParam[Seq[String]](this, "text", "the text in the request 
 
         val rows: Seq[Row] = (0 until (docCount + errorCount)).map(i =>{
           val entityRecognitionRows = getTaskRows(tasks, "entityRecognitionTasks", i)
-          val entityLinkingRows = None// getTaskRows(tasks, "entityLinkingTasks", i) // TODO debug NumberFormatException
+          val entityLinkingRows = getTaskRows(tasks, "entityLinkingTasks", i) // TODO debug NumberFormatException
           val entityRecognitionPiiRows = getTaskRows(tasks, "entityRecognitionPiiTasks", i)
           val keyPhraseRows = getTaskRows(tasks, "keyPhraseExtractionTasks", i)
           val sentimentAnalysisRows = getTaskRows(tasks, "sentimentAnalysisTasks", i)
