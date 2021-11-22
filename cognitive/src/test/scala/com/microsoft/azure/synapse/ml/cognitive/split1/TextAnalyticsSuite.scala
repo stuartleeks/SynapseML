@@ -474,6 +474,11 @@ class TextAnalyzeSuite extends TransformerFuzzing[TextAnalyze] with TextEndpoint
     .setLanguageCol("language")
     .setOutputCol("response")
     .setErrorCol("error")
+    .setEntityRecognitionTasks(Seq(TAAnalyzeTask(Map("model-version" -> "latest"))))
+    .setEntityLinkingTasks(Seq(TAAnalyzeTask(Map("model-version" -> "latest"))))
+    .setEntityRecognitionPiiTasks(Seq(TAAnalyzeTask(Map("model-version" -> "latest"))))
+    .setKeyPhraseExtractionTasks(Seq(TAAnalyzeTask(Map("model-version" -> "latest"))))
+    .setSentimentAnalysisTasks(Seq(TAAnalyzeTask(Map("model-version" -> "latest"))))
 
   def getEntityRecognitionResults(results: Dataset[Row], resultIndex: Int) : Array[Row] = {
     results.withColumn("entityRecognition",
