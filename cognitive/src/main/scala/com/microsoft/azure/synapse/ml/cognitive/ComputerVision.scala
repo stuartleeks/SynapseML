@@ -232,16 +232,17 @@ trait BasicAsyncReply extends HasAsyncReply {
                              request: HTTPRequestData): HTTPResponseData = {
     val response = HandlingUtils.advanced(getBackoffs: _*)(client, request)
     if (response.statusLine.statusCode == 202) {
-      val location = new URI(response.headers.filter(_.name == "Operation-Location").head.value)
+      val location = new URI(response.headers.filter(_.name.toLowerCase() == "operation-location").head.value)
       val maxTries = getMaxPollingRetries
       val key = request.headers.find(_.name == "Ocp-Apim-Subscription-Key").map(_.value)
       val it = (0 to maxTries).toIterator.flatMap { _ =>
-        queryForResult(key, client, location).orElse({
+        val resp = queryForResult(key, client, location).orElse({
           blocking {
             Thread.sleep(getPollingDelay.toLong)
           }
           None
         })
+        resp
       }
       if (it.hasNext) {
         it.next()
@@ -254,7 +255,6 @@ trait BasicAsyncReply extends HasAsyncReply {
     }
   }
 }
-
 
 trait HasAsyncReply extends Params {
   val backoffs: IntArrayParam = new IntArrayParam(
