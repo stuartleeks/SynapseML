@@ -5,6 +5,8 @@ package com.microsoft.azure.synapse.ml.cognitive
 
 import com.microsoft.azure.synapse.ml.core.schema.SparkBindings
 import spray.json.RootJsonFormat
+import org.apache.spark.ml.param.Params
+import org.apache.spark.ml.param.ParamValidators
 
 // General Text Analytics Schemas
 
@@ -40,7 +42,6 @@ object TAJSONFormat {
   implicit val AnalysisTaskFormat: RootJsonFormat[TAAnalyzeTask] = jsonFormat1(TAAnalyzeTask.apply)
   implicit val AnalysisTasksFormat: RootJsonFormat[TAAnalyzeTasks] = jsonFormat5(TAAnalyzeTasks.apply)
   implicit val AnalyzeRequestFormat: RootJsonFormat[TAAnalyzeRequest] = jsonFormat3(TAAnalyzeRequest.apply)
-  // implicit val AnalyzeResponseFormat: RootJsonFormat[TAAnalyzeResponse] = jsonFormat4(TAAnalyzeResponse.apply)
 }
 
 // SentimentV3 Schemas
@@ -184,7 +185,6 @@ case class TAAnalyzeResponseTasks(completed: Int,
                                   entityRecognitionPiiTasks: Option[Seq[TAAnalyzeResponseTask[PIIDocV3]]],
                                   keyPhraseExtractionTasks:  Option[Seq[TAAnalyzeResponseTask[KeyPhraseScoreV3]]],
                                   sentimentAnalysisTasks:  Option[Seq[TAAnalyzeResponseTask[SentimentScoredDocumentV3]]]
-                                  // TODO - add other task types
                                  )
 
 // API call response
@@ -194,17 +194,6 @@ case class TAAnalyzeResponse(status: String,
                              tasks: TAAnalyzeResponseTasks)
 
 object TAAnalyzeResponse extends SparkBindings[TAAnalyzeResponse]
-
-
-// TODO - error col for errors property
-//      - drop completed, failed, inProgress, total fields
-//      - setOutputCol -> setOutputColPrefix, then have <prefix>_keyPhraseExtraction etc (as, e.g. array of TAAnalyzeResponseTaskResults[KeyPhraseScoreV3] )
-
-// TODO - check that we're handling language/languageCol!
-
-// Transformer output schema per input row
-// TODO - add other task types
-// TODO - extend to handle multiple instances of each task type
 
 case class TAAnalyzeResultTaskResults[T](result: Option[T], // TODO - apply reshaping in the UDF? Similar to stripping id from results in TextAnalyticsBase.getInternalTransformer implementation
                                            error: Option[TAError])
