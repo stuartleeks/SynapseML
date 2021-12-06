@@ -9,11 +9,12 @@ import org.apache.spark.injections.UDFUtils
 import org.apache.spark.ml.param.DataFrameEquality
 import org.apache.spark.ml.util.MLReadable
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.functions.{col, lit}
 import org.apache.spark.sql.types.{ArrayType, IntegerType, StringType, StructType}
 import org.apache.spark.sql.{DataFrame, Dataset}
 import org.scalactic.Equality
 import org.scalatest.Assertion
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 
 trait MiniBatchTestUtils extends TestBase with DataFrameEquality {
   import spark.implicits._
@@ -131,6 +132,25 @@ class FlattenBatchSuite extends TransformerFuzzing[FlattenBatch] {
     val nullifiedDf = batchedDf.withColumn(
       "nullCol", UDFUtils.oldUdf(FlattenBatchUtils.nullify _, ArrayType(IntegerType))(col("in1")))
     assert(new FlattenBatch().transform(nullifiedDf).count() == 1000)
+  }
+
+  test("propagate non-array") {
+    val batchedDf = new FixedMiniBatchTransformer().setBatchSize(3).transform(df)
+    val fixedValueDf = batchedDf.withColumn("fixed_col", lit("fixed value"))
+
+    val result = new FlattenBatch().transform(fixedValueDf)
+    assert(result.count() == 1000)
+
+    val rows = result.collect()
+    val row1 = rows(0).asInstanceOf[GenericRowWithSchema]
+    assert(row1(0) == 1)
+    assert(row1(1) == "foo")
+    assert(row1(2) == "fixed value")
+    val row2 = rows(1).asInstanceOf[GenericRowWithSchema]
+    assert(row2(0) == 2)
+    assert(row2(1) == "foo")
+    assert(row2(2) == "fixed value")
+
   }
 
   override def testObjects(): Seq[TestObject[FlattenBatch]] = Seq(
