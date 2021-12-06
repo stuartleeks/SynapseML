@@ -131,7 +131,20 @@ class FlattenBatchSuite extends TransformerFuzzing[FlattenBatch] {
     val batchedDf = new FixedMiniBatchTransformer().setBatchSize(3).transform(df)
     val nullifiedDf = batchedDf.withColumn(
       "nullCol", UDFUtils.oldUdf(FlattenBatchUtils.nullify _, ArrayType(IntegerType))(col("in1")))
-    assert(new FlattenBatch().transform(nullifiedDf).count() == 1000)
+
+    val result = new FlattenBatch().transform(nullifiedDf)
+    assert(result.count() == 1000)
+
+    val rows = result.collect()
+    val row1 = rows(0).asInstanceOf[GenericRowWithSchema]
+    assert(row1(0) == 1)
+    assert(row1(1) == "foo")
+    assert(row1(2) == 1)
+    val row7 = rows(6).asInstanceOf[GenericRowWithSchema]
+    assert(row7(0) == 7)
+    assert(row7(1) == "foo")
+    assert(row7(2) == null)
+
   }
 
   test("propagate non-array") {

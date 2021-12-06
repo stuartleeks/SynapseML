@@ -218,13 +218,16 @@ class FlattenBatch(val uid: String)
         it.flatMap { rowOfLists =>
           val transposed: Seq[Seq[Any]] = transpose(
             (0 until rowOfLists.length)
-              .filterNot(rowOfLists.isNullAt)
               .map(i => {
-                val fieldSchema = rowOfLists.schema.fields(i)
-                fieldSchema.dataType match {
-                  case _ : ArrayType => rowOfLists.getSeq(i)
-                  case _ => rowOfLists.get(i)
-                }                
+                if (rowOfLists.isNullAt(i)) {
+                  null
+                } else {
+                  val fieldSchema = rowOfLists.schema.fields(i)
+                  fieldSchema.dataType match {
+                    case _ : ArrayType => rowOfLists.getSeq(i)
+                    case _ => rowOfLists.get(i)
+                  }
+                }
               }))
           transposed.map {
             values => new GenericRowWithSchema(values.toArray, outputSchema)
