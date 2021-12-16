@@ -23,14 +23,14 @@ object Secrets {
 
   // Keep overhead of setting account down
   lazy val AccountString: String = {
-    try {
-      exec(s"az account set -s $SubscriptionID")
-    } catch {
-      case e: java.lang.RuntimeException =>
-        println(s"Secret fetch error: ${e.toString}")
-      case e: IOException =>
-        println(s"Secret fetch error: ${e.toString}")
-    }
+    // try {
+    //   exec(s"az account set -s $SubscriptionID")
+    // } catch {
+    //   case e: java.lang.RuntimeException =>
+    //     println(s"Secret fetch error: ${e.toString}")
+    //   case e: IOException =>
+    //     println(s"Secret fetch error: ${e.toString}")
+    // }
     SubscriptionID
   }
 

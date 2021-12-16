@@ -213,9 +213,9 @@ trait ExperimentFuzzing[S <: PipelineStage] extends TestBase with DataFrameEqual
     }
   }
 
-  test("Experiment Fuzzing") {
-    testExperiments()
-  }
+  // test("Experiment Fuzzing") {
+  //   testExperiments()
+  // }
 
 }
 
@@ -291,9 +291,9 @@ trait SerializationFuzzing[S <: PipelineStage with MLWritable] extends TestBase 
     }
   }
 
-  test("Serialization Fuzzing") {
-    testSerialization()
-  }
+  // test("Serialization Fuzzing") {
+  //   testSerialization()
+  // }
 
 }
 
