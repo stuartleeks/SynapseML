@@ -602,8 +602,6 @@ class TextAnalyze(override val uid: String) extends TextAnalyticsBase(uid)
         rowOpt: Row => {
           Option(rowOpt).map { row =>
             logInfo("*#*# STUART TESTING!!! unpackBatchUDF-UDF")
-            // throw new Exception("*** STUART TESTING!!! unpackBatchUDF-UDF");
-            // try {
             val tasks = row.getAs[GenericRowWithSchema]("tasks")
 
             // Determine the total number of documents (successful docs + errors)
@@ -647,15 +645,6 @@ class TextAnalyze(override val uid: String) extends TextAnalyticsBase(uid)
               })
               rows
             }
-            // }
-            // catch {
-            //   case iae: IllegalArgumentException => 
-            //     logInfo(s"GOT_EXCEPTION:IllegalArgumentException:" + iae.toString() + ": " + iae.getStackTrace().toString())
-            //     throw new Exception("Caught IllegalArgumentException in unpackBatchUDF", iae)
-            //   case t: Throwable => 
-            //     logInfo(s"GOT_EXCEPTION:throwable:" + t.toString() + ": " + t.getStackTrace().toString())
-            //     throw new Exception("Caught Throwable in unpackBatchUDF", t)
-            // }
           }
         }
       }
