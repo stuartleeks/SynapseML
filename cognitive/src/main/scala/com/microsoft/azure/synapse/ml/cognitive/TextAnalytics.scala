@@ -555,8 +555,8 @@ class TextAnalyze(override val uid: String) extends TextAnalyticsBase(uid)
           val result = inputRow.getAs[GenericRowWithSchema]("results")
           val documents = result.getAs[Seq[GenericRowWithSchema]]("documents")
           val errors = result.getAs[Seq[GenericRowWithSchema]]("errors")
-          val doc = documents.find { d => d.getAs[String]("id").toInt == documentIndex }
-          val error = errors.find { e => e.getAs[String]("id").toInt == documentIndex }
+          val doc = documents.find { d => getId(d) == documentIndex }
+          val error = errors.find { e => getId(e) == documentIndex }
           val resultRow = Row.fromSeq(Seq(doc, error)) // result/errors per task, per document
           resultRow
         } else {
@@ -570,30 +570,50 @@ class TextAnalyze(override val uid: String) extends TextAnalyticsBase(uid)
     }
   }
 
+  private def getId(row: GenericRowWithSchema): Int = {
+    // In all manual testing, the `id` value has been a string
+    // In all automated tests, it has been a string
+    // In some stress tests we got an exception: 
+    //    "java.lang.IllegalArgumentException: The value (0) of the type
+    //        (java.lang.Integer) cannot be converted to the string type"
+    // ... so have added this logic as the id field seemed the most likely candidate
+    val index = row.fieldIndex("id")
+    val idValue = row.get(index)
+    idValue match {
+      case strValue : String => strValue.toInt
+      case intValue : Int => {
+        logInfo("*#*# id field was an integer")
+        intValue
+      }
+      case _ => throw new IllegalArgumentException("id value should be string (or int)")
+    }
+  }
+
   override protected def unpackBatchUDF: UserDefinedFunction = {
     val innerResponseDataType = TAAnalyzeResults.schema
 
     UDFUtils.oldUdf({ rowOpt: Row =>
       Option(rowOpt).map { row =>
-        val tasks = row.getAs[GenericRowWithSchema]("tasks")
+        try {
+          val tasks = row.getAs[GenericRowWithSchema]("tasks")
 
-        // Determine the total number of documents (successful docs + errors)
-        // We need to handle the fact that entityRecognition might not have been specified
-        // - i.e. find the first task with results
-        val taskNames = Seq(
-          "entityRecognitionTasks",
-          "entityLinkingTasks",
-          "entityRecognitionPiiTasks",
-          "keyPhraseExtractionTasks",
-          "sentimentAnalysisTasks")
-        val succeededTasks = taskNames.map(name => tasks.getAs[Seq[GenericRowWithSchema]](name))
-          .filter(r => r != null)
-          .flatten
-          // only consider tasks that succeeded to handle 'partiallycompleted' requests
-          .filter(r => r.getAs[String]("state") == "succeeded")
+          // Determine the total number of documents (successful docs + errors)
+          // We need to handle the fact that entityRecognition might not have been specified
+          // - i.e. find the first task with results
+          val taskNames = Seq(
+            "entityRecognitionTasks",
+            "entityLinkingTasks",
+            "entityRecognitionPiiTasks",
+            "keyPhraseExtractionTasks",
+            "sentimentAnalysisTasks")
+          val succeededTasks = taskNames.map(name => tasks.getAs[Seq[GenericRowWithSchema]](name))
+            .filter(r => r != null)
+            .flatten
+            // only consider tasks that succeeded to handle 'partiallycompleted' requests
+            .filter(r => r.getAs[String]("state") == "succeeded")
 
           if (succeededTasks.length == 0) {
-           Seq()
+            Seq()
           } else {
             val succeededTask = succeededTasks.head
             val results = succeededTask.getAs[GenericRowWithSchema]("results")
@@ -618,6 +638,15 @@ class TextAnalyze(override val uid: String) extends TextAnalyticsBase(uid)
             })
             rows
           }
+        }
+        catch {
+          case iae: IllegalArgumentException => 
+            logInfo(s"GOT_EXCEPTION:IllegalArgumentException:" + iae.toString() + ": " + iae.getStackTrace().toString())
+            throw new Exception("Caught IllegalArgumentException in unpackBatchUDF", iae)
+          case t: Throwable => 
+            logInfo(s"GOT_EXCEPTION:throwable:" + t.toString() + ": " + t.getStackTrace().toString())
+            throw new Exception("Caught Throwable in unpackBatchUDF", t)
+        }
       }
     }, ArrayType(innerResponseDataType)
     )
