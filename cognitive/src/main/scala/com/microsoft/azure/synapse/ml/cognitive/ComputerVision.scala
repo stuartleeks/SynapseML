@@ -256,6 +256,9 @@ trait BasicAsyncReply extends HasAsyncReply with BasicLogging {
 
   protected def handlingFunc(client: CloseableHttpClient,
                              request: HTTPRequestData): HTTPResponseData = {
+    logInfo("*#*# STUART TESTING!!! BasicAsyncReply.handlingFunc")
+    // throw new Exception("*** STUART TESTING!!! BasicAsyncReply.handlingFunc");
+
     val response = HandlingUtils.advanced(getBackoffs: _*)(client, request)
     val startedTime = System.nanoTime
     if (response != null && response.statusLine.statusCode == 202) {

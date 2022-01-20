@@ -109,6 +109,8 @@ abstract class TextAnalyticsBase(override val uid: String) extends CognitiveServ
   }
 
   protected def unpackBatchUDF: UserDefinedFunction = {
+    logInfo("*#*# STUART TESTING!!! TextAnalyticsBase.unpackBatchUDF")
+    throw new Exception("*** STUART TESTING!!!  TextAnalyticsBase.unpackBatchUDF");
     val innerFields = innerResponseDataType.fields.filter(_.name != "id")
     UDFUtils.oldUdf({ rowOpt: Row =>
       Option(rowOpt).map { row =>
@@ -577,6 +579,7 @@ class TextAnalyze(override val uid: String) extends TextAnalyticsBase(uid)
     //    "java.lang.IllegalArgumentException: The value (0) of the type
     //        (java.lang.Integer) cannot be converted to the string type"
     // ... so have added this logic as the id field seemed the most likely candidate
+    logInfo("*#*# STUART TESTING!!! getId")
     val index = row.fieldIndex("id")
     val idValue = row.get(index)
     idValue match {
@@ -592,61 +595,77 @@ class TextAnalyze(override val uid: String) extends TextAnalyticsBase(uid)
   override protected def unpackBatchUDF: UserDefinedFunction = {
     val innerResponseDataType = TAAnalyzeResults.schema
 
-    UDFUtils.oldUdf({ rowOpt: Row =>
-      Option(rowOpt).map { row =>
-        try {
-          val tasks = row.getAs[GenericRowWithSchema]("tasks")
+    logInfo("*#*# STUART TESTING!!! unpackBatchUDF-outer")
 
-          // Determine the total number of documents (successful docs + errors)
-          // We need to handle the fact that entityRecognition might not have been specified
-          // - i.e. find the first task with results
-          val taskNames = Seq(
-            "entityRecognitionTasks",
-            "entityLinkingTasks",
-            "entityRecognitionPiiTasks",
-            "keyPhraseExtractionTasks",
-            "sentimentAnalysisTasks")
-          val succeededTasks = taskNames.map(name => tasks.getAs[Seq[GenericRowWithSchema]](name))
-            .filter(r => r != null)
-            .flatten
-            // only consider tasks that succeeded to handle 'partiallycompleted' requests
-            .filter(r => r.getAs[String]("state") == "succeeded")
+    UDFUtils.oldUdf({ 
+      try {
+        rowOpt: Row => {
+          Option(rowOpt).map { row =>
+            logInfo("*#*# STUART TESTING!!! unpackBatchUDF-UDF")
+            // throw new Exception("*** STUART TESTING!!! unpackBatchUDF-UDF");
+            // try {
+            val tasks = row.getAs[GenericRowWithSchema]("tasks")
 
-          if (succeededTasks.length == 0) {
-            Seq()
-          } else {
-            val succeededTask = succeededTasks.head
-            val results = succeededTask.getAs[GenericRowWithSchema]("results")
-            val docCount = results.getAs[Seq[GenericRowWithSchema]]("documents").size
-            val errorCount = results.getAs[Seq[GenericRowWithSchema]]("errors").size
+            // Determine the total number of documents (successful docs + errors)
+            // We need to handle the fact that entityRecognition might not have been specified
+            // - i.e. find the first task with results
+            val taskNames = Seq(
+              "entityRecognitionTasks",
+              "entityLinkingTasks",
+              "entityRecognitionPiiTasks",
+              "keyPhraseExtractionTasks",
+              "sentimentAnalysisTasks")
+            val succeededTasks = taskNames.map(name => tasks.getAs[Seq[GenericRowWithSchema]](name))
+              .filter(r => r != null)
+              .flatten
+              // only consider tasks that succeeded to handle 'partiallycompleted' requests
+              .filter(r => r.getAs[String]("state") == "succeeded")
 
-            val rows: Seq[Row] = (0 until (docCount + errorCount)).map(i => {
-              val entityRecognitionRows = getTaskRows(tasks, "entityRecognitionTasks", i)
-              val entityLinkingRows = getTaskRows(tasks, "entityLinkingTasks", i)
-              val entityRecognitionPiiRows = getTaskRows(tasks, "entityRecognitionPiiTasks", i)
-              val keyPhraseRows = getTaskRows(tasks, "keyPhraseExtractionTasks", i)
-              val sentimentAnalysisRows = getTaskRows(tasks, "sentimentAnalysisTasks", i)
+            if (succeededTasks.length == 0) {
+              Seq()
+            } else {
+              val succeededTask = succeededTasks.head
+              val results = succeededTask.getAs[GenericRowWithSchema]("results")
+              val docCount = results.getAs[Seq[GenericRowWithSchema]]("documents").size
+              val errorCount = results.getAs[Seq[GenericRowWithSchema]]("errors").size
 
-              val taaResult = Seq(
-                entityRecognitionRows,
-                entityLinkingRows,
-                entityRecognitionPiiRows,
-                keyPhraseRows,
-                sentimentAnalysisRows)
-              val resultRow = Row.fromSeq(taaResult)
-              resultRow
-            })
-            rows
+              val rows: Seq[Row] = (0 until (docCount + errorCount)).map(i => {
+                val entityRecognitionRows = getTaskRows(tasks, "entityRecognitionTasks", i)
+                val entityLinkingRows = getTaskRows(tasks, "entityLinkingTasks", i)
+                val entityRecognitionPiiRows = getTaskRows(tasks, "entityRecognitionPiiTasks", i)
+                val keyPhraseRows = getTaskRows(tasks, "keyPhraseExtractionTasks", i)
+                val sentimentAnalysisRows = getTaskRows(tasks, "sentimentAnalysisTasks", i)
+
+                val taaResult = Seq(
+                  entityRecognitionRows,
+                  entityLinkingRows,
+                  entityRecognitionPiiRows,
+                  keyPhraseRows,
+                  sentimentAnalysisRows)
+                val resultRow = Row.fromSeq(taaResult)
+                resultRow
+              })
+              rows
+            }
+            // }
+            // catch {
+            //   case iae: IllegalArgumentException => 
+            //     logInfo(s"GOT_EXCEPTION:IllegalArgumentException:" + iae.toString() + ": " + iae.getStackTrace().toString())
+            //     throw new Exception("Caught IllegalArgumentException in unpackBatchUDF", iae)
+            //   case t: Throwable => 
+            //     logInfo(s"GOT_EXCEPTION:throwable:" + t.toString() + ": " + t.getStackTrace().toString())
+            //     throw new Exception("Caught Throwable in unpackBatchUDF", t)
+            // }
           }
         }
-        catch {
-          case iae: IllegalArgumentException => 
-            logInfo(s"GOT_EXCEPTION:IllegalArgumentException:" + iae.toString() + ": " + iae.getStackTrace().toString())
-            throw new Exception("Caught IllegalArgumentException in unpackBatchUDF", iae)
-          case t: Throwable => 
-            logInfo(s"GOT_EXCEPTION:throwable:" + t.toString() + ": " + t.getStackTrace().toString())
-            throw new Exception("Caught Throwable in unpackBatchUDF", t)
-        }
+      }
+      catch {
+        case iae: IllegalArgumentException => 
+          logInfo(s"GOT_EXCEPTION:**:IllegalArgumentException:" + iae.toString() + ": " + iae.getStackTrace().toString())
+          throw new Exception("Caught IllegalArgumentException in unpackBatchUDF", iae)
+      case t: Throwable => 
+          logInfo(s"GOT_EXCEPTION:**:throwable:" + t.toString() + ": " + t.getStackTrace().toString())
+          throw new Exception("Caught Throwable in unpackBatchUDF", t)
       }
     }, ArrayType(innerResponseDataType)
     )
